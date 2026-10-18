@@ -79,6 +79,9 @@ const config: Config = {
         docsRouteBasePath: '/',
         highlightSearchTermsOnTargetPage: true,
         explicitSearchResultPath: true,
+        // KaTeX renders each formula three times (visual, MathML, LaTeX source);
+        // index only the MathML text so results do not repeat it.
+        ignoreCssSelectors: ['.katex-html', '.katex-mathml annotation'],
       },
     ],
   ],

@@ -1,0 +1,243 @@
+---
+title: Array
+description: A block of contiguous memory where every element is reached by its index in O(1).
+sidebar_position: 1
+---
+
+import Tabs from '@theme/Tabs';
+import TabItem from '@theme/TabItem';
+
+# Array
+
+## Idea
+
+An **array** stores a fixed number of elements of the same type **next to each other in memory**. Every element has an **index**, starting from 0, and the index is all you need to jump straight to the element.
+
+The jump is instant because of the layout. If the array starts at memory address `base` and every element takes `s` bytes, element `i` lives at:
+
+$$
+\text{address}(i) = \text{base} + i \times s
+$$
+
+That is one multiplication and one addition, however large the array is. This is why reading `arr[i]` costs $O(1)$.
+
+## How it works
+
+This is the memory layout of `[10, 20, 30, 40, 50]` with 4-byte integers, starting at address 1000:
+
+| Index   | 0    | 1    | 2    | 3    | 4    |
+| ------- | ---- | ---- | ---- | ---- | ---- |
+| Value   | 10   | 20   | 30   | 40   | 50   |
+| Address | 1000 | 1004 | 1008 | 1012 | 1016 |
+
+The same layout explains why some operations are slow: elements cannot leave gaps, so changing the middle of an array means moving other elements.
+
+### Insert and delete
+
+To insert 25 at index 2, every element from index 2 onward moves one slot to the right. Start from the **last** element, otherwise you overwrite data you still need:
+
+```text
+start  : [10, 20, 30, 40, 50,  _ ]
+shift  : [10, 20,  _, 30, 40, 50]
+insert : [10, 20, 25, 30, 40, 50]
+```
+
+Deleting is the mirror image: the elements after the removed one move one slot to the left. In both cases up to $n$ elements move, so the cost is $O(n)$. Inserting or deleting at the **end** moves nothing, so it costs $O(1)$.
+
+### Fixed-size and dynamic arrays
+
+A basic array (`int arr[5]` in C and C++, `int[]` in Java) has its size fixed when it is created. Most languages also offer a **dynamic array**: Python `list`, C++ `std::vector`, Java `ArrayList`. When it runs out of room, it allocates a bigger block (usually twice the size), copies every element into it, and carries on.
+
+Copying is expensive, but it is rare. If you append $n$ elements to an empty dynamic array, copies happen when the size reaches 1, 2, 4, 8, ... and the total number of copied elements is:
+
+$$
+1 + 2 + 4 + \dots + 2^k = 2^{k+1} - 1 < 2n \qquad (2^k < n)
+$$
+
+Spread over $n$ appends, that is less than 2 copies per append, so appending costs $O(1)$ on average. This is called **amortized** $O(1)$.
+
+## Code
+
+### Insert and delete by shifting
+
+Here the array has a fixed capacity and a separate `size` that says how many slots are in use.
+
+<Tabs groupId="language">
+  <TabItem value="python" label="Python" default>
+
+```python title="array_ops.py"
+def insert(arr, size, index, value):
+    """Insert value at index. Returns the new size."""
+    if size == len(arr):
+        raise OverflowError("array is full")
+    if not 0 <= index <= size:
+        raise IndexError("index out of range")
+    for i in range(size, index, -1):  # shift right, starting from the end
+        arr[i] = arr[i - 1]
+    arr[index] = value
+    return size + 1
+
+
+def remove(arr, size, index):
+    """Remove the item at index. Returns the new size."""
+    if not 0 <= index < size:
+        raise IndexError("index out of range")
+    for i in range(index, size - 1):  # shift left
+        arr[i] = arr[i + 1]
+    return size - 1
+
+
+arr = [10, 20, 30, 40, 50, None]  # capacity 6, 5 slots in use
+size = 5
+size = insert(arr, size, 2, 25)   # arr[:size] == [10, 20, 25, 30, 40, 50]
+size = remove(arr, size, 0)       # arr[:size] == [20, 25, 30, 40, 50]
+```
+
+  </TabItem>
+  <TabItem value="cpp" label="C++">
+
+```cpp title="array_ops.cpp"
+#include <stdexcept>
+
+// Inserts value at index. Returns the new size.
+int insertAt(int arr[], int size, int capacity, int index, int value) {
+    if (size == capacity) throw std::overflow_error("array is full");
+    if (index < 0 || index > size) throw std::out_of_range("index out of range");
+    for (int i = size; i > index; --i) {
+        arr[i] = arr[i - 1];  // shift right, starting from the end
+    }
+    arr[index] = value;
+    return size + 1;
+}
+
+// Removes the item at index. Returns the new size.
+int removeAt(int arr[], int size, int index) {
+    if (index < 0 || index >= size) throw std::out_of_range("index out of range");
+    for (int i = index; i < size - 1; ++i) {
+        arr[i] = arr[i + 1];  // shift left
+    }
+    return size - 1;
+}
+
+int main() {
+    int arr[6] = {10, 20, 30, 40, 50};  // capacity 6, 5 slots in use
+    int size = 5;
+    size = insertAt(arr, size, 6, 2, 25);  // 10 20 25 30 40 50
+    size = removeAt(arr, size, 0);         // 20 25 30 40 50
+}
+```
+
+  </TabItem>
+  <TabItem value="java" label="Java">
+
+```java title="ArrayOps.java"
+public class ArrayOps {
+    // Inserts value at index. Returns the new size.
+    static int insert(int[] arr, int size, int index, int value) {
+        if (size == arr.length) throw new IllegalStateException("array is full");
+        if (index < 0 || index > size) throw new IndexOutOfBoundsException("index out of range");
+        for (int i = size; i > index; i--) {
+            arr[i] = arr[i - 1];  // shift right, starting from the end
+        }
+        arr[index] = value;
+        return size + 1;
+    }
+
+    // Removes the item at index. Returns the new size.
+    static int remove(int[] arr, int size, int index) {
+        if (index < 0 || index >= size) throw new IndexOutOfBoundsException("index out of range");
+        for (int i = index; i < size - 1; i++) {
+            arr[i] = arr[i + 1];  // shift left
+        }
+        return size - 1;
+    }
+
+    public static void main(String[] args) {
+        int[] arr = {10, 20, 30, 40, 50, 0};  // capacity 6, 5 slots in use
+        int size = 5;
+        size = insert(arr, size, 2, 25);  // 10 20 25 30 40 50
+        size = remove(arr, size, 0);      // 20 25 30 40 50
+    }
+}
+```
+
+  </TabItem>
+</Tabs>
+
+### Dynamic arrays in the standard library
+
+In practice you use the built-in dynamic array and let it manage the capacity.
+
+<Tabs groupId="language">
+  <TabItem value="python" label="Python" default>
+
+```python
+nums = [10, 20, 30]
+nums.append(40)     # O(1) amortized
+nums.insert(1, 15)  # O(n): shifts the tail
+nums.pop()          # O(1): removes the last element
+nums.pop(0)         # O(n): shifts everything left
+x = nums[2]         # O(1)
+```
+
+  </TabItem>
+  <TabItem value="cpp" label="C++">
+
+```cpp
+#include <vector>
+
+std::vector<int> nums = {10, 20, 30};
+nums.push_back(40);                 // O(1) amortized
+nums.insert(nums.begin() + 1, 15);  // O(n): shifts the tail
+nums.pop_back();                    // O(1): removes the last element
+nums.erase(nums.begin());           // O(n): shifts everything left
+int x = nums[2];                    // O(1)
+```
+
+  </TabItem>
+  <TabItem value="java" label="Java">
+
+```java
+import java.util.ArrayList;
+import java.util.List;
+
+List<Integer> nums = new ArrayList<>(List.of(10, 20, 30));
+nums.add(40);                    // O(1) amortized
+nums.add(1, 15);                 // O(n): shifts the tail
+nums.remove(nums.size() - 1);    // O(1): removes the last element
+nums.remove(0);                  // O(n): shifts everything left
+int x = nums.get(2);             // O(1)
+```
+
+  </TabItem>
+</Tabs>
+
+## Complexity
+
+| Operation                              | Time        | Notes                                              |
+| -------------------------------------- | ----------- | -------------------------------------------------- |
+| Access or update by index              | $O(1)$      | Computed from the address formula                  |
+| Search in an unsorted array            | $O(n)$      | Linear scan                                        |
+| Search in a sorted array               | $O(\log n)$ | Binary search                                      |
+| Insert or delete at the end            | $O(1)$      | Amortized for dynamic arrays                       |
+| Insert or delete at the start or middle | $O(n)$     | Elements must be shifted                           |
+| Space                                  | $O(n)$      | Dynamic arrays may keep some unused spare capacity |
+
+## When to use it
+
+Use an array when:
+
+- You need fast access by index.
+- You mostly read, iterate, or append at the end.
+- Speed matters: elements sit together in memory, so iterating is fast on modern CPUs.
+
+Look at another structure when:
+
+- You insert or delete at the front or middle often. A linked list or a deque fits better.
+- You look elements up by value or by key. A hash table does that in $O(1)$ on average.
+
+:::warning[Common pitfalls]
+- **Off-by-one errors.** An array of $n$ elements has valid indexes $0$ to $n - 1$. Index $n$ is out of range.
+- **No bounds check in C and C++.** Reading `arr[n]` is undefined behavior, not an error. The program may crash, or silently read garbage.
+- **Slow inserts in loops.** Calling `insert(0, x)` or `pop(0)` inside a loop turns an $O(n)$ algorithm into $O(n^2)$.
+:::
