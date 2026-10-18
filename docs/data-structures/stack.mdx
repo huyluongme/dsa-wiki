@@ -1,0 +1,379 @@
+---
+title: Stack
+description: A pile where you can only add to the top and take from the top, so the last item in is the first item out.
+sidebar_position: 3
+---
+
+import Tabs from '@theme/Tabs';
+import TabItem from '@theme/TabItem';
+import StackDiagram from '@site/src/components/StackDiagram';
+
+# Stack
+
+A **stack** is a pile: you can only put things on top, and you can only take things from the top.
+
+## Idea
+
+Picture a pile of plates in a cafeteria. Clean plates are put on top of the pile. When someone needs a plate, they take the one from the top. The plate you put on last is the first one to leave. Nobody pulls a plate out of the middle.
+
+Computer scientists call this **last in, first out**, or **LIFO**.
+
+A stack only needs a few operations:
+
+- **push**: put an item on top.
+- **pop**: take the top item off and hand it to you.
+- **peek** (also called **top**): look at the top item without removing it.
+- **is empty**: check whether anything is left.
+
+<StackDiagram items={[10, 20, 30]} />
+
+Here `10` went in first and `30` went in last, so `30` is the first to come out.
+
+A stack is a **rule** about how you use a collection, not a particular layout in memory. You can build one on top of an array or a linked list.
+
+## How it works
+
+### Push and pop
+
+Here is a stack growing and shrinking. The left end is the bottom of the pile and the right end is the top:
+
+```text
+start:       (empty)
+push 10:     10
+push 20:     10 20
+push 30:     10 20 30
+pop -> 30:   10 20
+pop -> 20:   10
+```
+
+### Building one
+
+- **With an array.** The end of the array is the top. Pushing adds an item at the end and popping removes the last item. Both are fast, as you saw on the [Array](./array.mdx) page.
+- **With a linked list.** The head is the top. Pushing inserts at the front and popping removes the front. Both are instant too, as you saw on the [Linked List](./linked-list.mdx) page.
+
+Either way, items are only added or removed at one end, so the slow cases of those structures never come up.
+
+### When the stack is empty or full
+
+Popping or peeking an empty stack is a mistake, called **underflow**. Check whether the stack is empty first. If you do not, the result depends on the language: Python and Java report an error, while C and C++ do something undefined that may crash or return garbage.
+
+A stack with a fixed amount of room can also fill up. Pushing onto a full stack is called an **overflow**.
+
+### A stack you already use: the call stack
+
+Every time a function calls another function, the computer pushes a note onto a stack saying where to continue when the new function finishes. When that function ends, its note is popped. This is the **call stack**. It is why a function can call itself (this is called recursion) and each call keeps its own variables.
+
+The call stack has limited room. If calls pile up past that room, for example because a function calls itself forever, the program hits a **stack overflow** and crashes.
+
+## Code
+
+Most languages already have a stack ready to use. In C++ it is `std::stack`. In Python a `list` works, with `append` to push and `pop` to pop. In Java the recommended choice is `ArrayDeque` (the old `Stack` class is discouraged). C has none, so the C version builds a small one on an array. To keep the code short, the C stack does not check whether it is empty or full. Real code should.
+
+### Push, pop and peek
+
+<Tabs groupId="language">
+  <TabItem value="c" label="C" default>
+
+```c title="basics.c"
+#include <stdio.h>
+
+#define CAPACITY 8
+
+typedef struct {
+    int items[CAPACITY];
+    int size;  // how many items are in the stack
+} Stack;
+
+void push(Stack *s, int value) {
+    s->items[s->size] = value;  // put it on top...
+    s->size++;                  // ...and count it
+}
+
+int pop(Stack *s) {
+    s->size--;  // the top item leaves
+    return s->items[s->size];
+}
+
+int peek(const Stack *s) {
+    return s->items[s->size - 1];  // look at the top, do not remove it
+}
+
+int main(void) {
+    Stack stack = {.size = 0};  // an empty stack
+    push(&stack, 10);
+    push(&stack, 20);
+    push(&stack, 30);  // the top is now 30
+
+    printf("peek %d\n", peek(&stack));  // peek 30
+    printf("pop %d\n", pop(&stack));    // pop 30
+    printf("pop %d\n", pop(&stack));    // pop 20
+    printf("size %d\n", stack.size);    // size 1
+    return 0;
+}
+```
+
+  </TabItem>
+  <TabItem value="cpp" label="C++">
+
+```cpp title="basics.cpp"
+#include <iostream>
+#include <stack>
+
+int main() {
+    std::stack<int> stack;  // an empty stack
+    stack.push(10);
+    stack.push(20);
+    stack.push(30);  // the top is now 30
+
+    std::cout << "peek " << stack.top() << "\n";  // peek 30
+
+    std::cout << "pop " << stack.top() << "\n";  // pop 30
+    stack.pop();  // pop() removes the top but does not return it
+
+    std::cout << "pop " << stack.top() << "\n";  // pop 20
+    stack.pop();
+
+    std::cout << "size " << stack.size() << "\n";  // size 1
+}
+```
+
+  </TabItem>
+  <TabItem value="python" label="Python">
+
+```python title="basics.py"
+stack = []  # an empty stack: a list whose end is the top
+stack.append(10)
+stack.append(20)
+stack.append(30)  # the top is now 30
+
+print("peek", stack[-1])   # peek 30
+print("pop", stack.pop())  # pop 30
+print("pop", stack.pop())  # pop 20
+print("size", len(stack))  # size 1
+```
+
+  </TabItem>
+  <TabItem value="java" label="Java">
+
+```java title="Basics.java"
+import java.util.ArrayDeque;
+import java.util.Deque;
+
+public class Basics {
+    public static void main(String[] args) {
+        Deque<Integer> stack = new ArrayDeque<>();  // an empty stack
+        stack.push(10);
+        stack.push(20);
+        stack.push(30);  // the top is now 30
+
+        System.out.println("peek " + stack.peek());  // peek 30
+        System.out.println("pop " + stack.pop());    // pop 30
+        System.out.println("pop " + stack.pop());    // pop 20
+        System.out.println("size " + stack.size());  // size 1
+    }
+}
+```
+
+  </TabItem>
+</Tabs>
+
+### A classic use: matching brackets
+
+Is `([]{})` written correctly? Every closing bracket must close the **most recent** opening bracket that is still open. That is exactly what a stack gives you. Push every opening bracket. When you meet a closing bracket, pop and check that the two match. At the end, nothing should be left open.
+
+<Tabs groupId="language">
+  <TabItem value="c" label="C" default>
+
+```c title="brackets.c"
+#include <stdio.h>
+#include <string.h>
+
+// Returns 1 if every bracket is closed in the right order.
+int is_balanced(const char *text) {
+    char stack[100];  // the brackets that are still open
+    int size = 0;
+
+    for (size_t i = 0; i < strlen(text); i++) {
+        char c = text[i];
+        if (c == '(' || c == '[' || c == '{') {
+            if (size == 100) return 0;  // too deep for this demo
+            stack[size++] = c;          // push an opening bracket
+        } else if (c == ')' || c == ']' || c == '}') {
+            if (size == 0) return 0;    // nothing to close
+            char open = stack[--size];  // pop the latest one
+            if ((c == ')' && open != '(') ||
+                (c == ']' && open != '[') ||
+                (c == '}' && open != '{')) return 0;  // wrong kind
+        }
+    }
+    return size == 0;  // anything left open?
+}
+
+void show(const char *text) {
+    printf("%s\n", is_balanced(text) ? "yes" : "no");
+}
+
+int main(void) {
+    show("([]{})");  // yes
+    show("(]");      // no
+    show("((");      // no
+    show("");        // yes
+    return 0;
+}
+```
+
+  </TabItem>
+  <TabItem value="cpp" label="C++">
+
+```cpp title="brackets.cpp"
+#include <iostream>
+#include <stack>
+#include <string>
+
+// Returns true if every bracket is closed in the right order.
+bool is_balanced(const std::string &text) {
+    std::stack<char> opened;  // the brackets that are still open
+
+    for (char c : text) {
+        if (c == '(' || c == '[' || c == '{') {
+            opened.push(c);  // push an opening bracket
+        } else if (c == ')' || c == ']' || c == '}') {
+            if (opened.empty()) return false;  // nothing to close
+            char open = opened.top();  // the latest opening bracket
+            opened.pop();
+            if ((c == ')' && open != '(') ||
+                (c == ']' && open != '[') ||
+                (c == '}' && open != '{')) return false;  // wrong kind
+        }
+    }
+    return opened.empty();  // anything left open?
+}
+
+void show(const std::string &text) {
+    std::cout << (is_balanced(text) ? "yes" : "no") << "\n";
+}
+
+int main() {
+    show("([]{})");  // yes
+    show("(]");      // no
+    show("((");      // no
+    show("");        // yes
+}
+```
+
+  </TabItem>
+  <TabItem value="python" label="Python">
+
+```python title="brackets.py"
+PAIRS = {")": "(", "]": "[", "}": "{"}  # closing -> its opening bracket
+
+
+def is_balanced(text):
+    """True if every bracket is closed in the right order."""
+    stack = []  # the brackets that are still open
+    for c in text:
+        if c in "([{":
+            stack.append(c)  # push an opening bracket
+        elif c in PAIRS:
+            if not stack or stack.pop() != PAIRS[c]:
+                return False  # nothing to close, or the wrong kind
+    return not stack  # anything left open?
+
+
+def show(text):
+    print("yes" if is_balanced(text) else "no")
+
+
+show("([]{})")  # yes
+show("(]")      # no
+show("((")      # no
+show("")        # yes
+```
+
+  </TabItem>
+  <TabItem value="java" label="Java">
+
+```java title="Brackets.java"
+import java.util.ArrayDeque;
+import java.util.Deque;
+
+public class Brackets {
+    // Returns true if every bracket is closed in the right order.
+    static boolean isBalanced(String text) {
+        Deque<Character> stack = new ArrayDeque<>();  // still open
+        for (char c : text.toCharArray()) {
+            if (c == '(' || c == '[' || c == '{') {
+                stack.push(c);  // push an opening bracket
+            } else if (c == ')' || c == ']' || c == '}') {
+                if (stack.isEmpty()) return false;  // nothing to close
+                char open = stack.pop();  // the latest opening bracket
+                if ((c == ')' && open != '(')
+                        || (c == ']' && open != '[')
+                        || (c == '}' && open != '{')) return false;
+            }
+        }
+        return stack.isEmpty();  // anything left open?
+    }
+
+    static void show(String text) {
+        System.out.println(isBalanced(text) ? "yes" : "no");
+    }
+
+    public static void main(String[] args) {
+        show("([]{})");  // yes
+        show("(]");      // no
+        show("((");      // no
+        show("");        // yes
+    }
+}
+```
+
+  </TabItem>
+</Tabs>
+
+## Complexity
+
+If O(1) and O(n) are new to you, see the [Array](./array.mdx) page.
+
+| Operation                   | Cost   | In plain words                                                          |
+| --------------------------- | ------ | ----------------------------------------------------------------------- |
+| Push                        | $O(1)$ | Put it on top. Nothing else moves. A growable array is slower only on the rare push that makes it grow. |
+| Pop                         | $O(1)$ | Take it off the top. Nothing else moves.                                |
+| Peek                        | $O(1)$ | Look at the top.                                                        |
+| Is empty                    | $O(1)$ | Check one number.                                                       |
+| Find a value in the middle  | $O(n)$ | You would have to pop items one by one. A stack is not built for this.  |
+| Memory used                 | $O(n)$ | One slot per item.                                                      |
+
+## When to use it
+
+A stack is a good fit when the **most recent** thing has to be handled first:
+
+- **Undo.** The last thing you did is the first thing to be undone.
+- **Going back.** Think of a browser's back button: the page you left last is the one you return to.
+- **Nested things.** Brackets, quotes, and HTML tags must be closed in the reverse order they were opened.
+- **Backtracking.** Try a path, and when you get stuck, return to the last choice you made. Depth-first search in a [graph](./graph.mdx) works this way.
+- **Function calls.** The call stack is a stack.
+
+Look at another structure when:
+
+- You need the **oldest** item first. That is a [queue](./queue.mdx).
+- You need to reach any item by its position. An [array](./array.mdx) does that.
+
+:::warning[Common mistakes]
+- **Popping or peeking an empty stack.** Check whether it is empty first.
+- **Expecting C++ `pop()` to return the value.** It returns nothing. Read `top()` first, then call `pop()`.
+- **Using Java's old `Stack` class.** Its own documentation recommends `ArrayDeque` instead.
+- **Popping from the wrong end in Python.** A stack pops from the end with `pop()`. Calling `pop(0)` takes the bottom item, and is slow.
+- **Endless recursion.** A function that never stops calling itself fills the call stack and crashes the program.
+:::
+
+## Sources
+
+The facts on this page were checked against:
+
+- [Stack (abstract data type), Wikipedia](https://en.wikipedia.org/wiki/Stack_%28abstract_data_type%29)
+- [Call stack, Wikipedia](https://en.wikipedia.org/wiki/Call_stack)
+- [std::stack, cppreference](https://en.cppreference.com/w/cpp/container/stack)
+- [Stack, Java SE 21 API](https://docs.oracle.com/en/java/javase/21/docs/api/java.base/java/util/Stack.html)
+- [ArrayDeque, Java SE 21 API](https://docs.oracle.com/en/java/javase/21/docs/api/java.base/java/util/ArrayDeque.html)
+- [Using lists as stacks, The Python Tutorial](https://docs.python.org/3/tutorial/datastructures.html#using-lists-as-stacks)

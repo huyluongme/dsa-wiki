@@ -1,0 +1,36 @@
+.figure {
+  margin: 0 0 var(--ifm-leading);
+  padding: 0.5rem 0;
+}
+
+.pile {
+  display: inline-flex;
+  flex-direction: column;
+}
+
+.row {
+  display: flex;
+  align-items: center;
+}
+
+.box {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 6rem;
+  height: 2.5rem;
+  margin-top: -2px; /* neighbouring boxes share one border */
+  border: 2px solid var(--ifm-color-primary);
+  background: var(--ifm-background-surface-color);
+  font-family: var(--ifm-font-family-monospace);
+  font-weight: var(--ifm-font-weight-bold);
+}
+
+.mark {
+  padding-left: 0.75rem;
+  color: var(--ifm-color-primary);
+  font-family: var(--ifm-font-family-monospace);
+  font-size: 0.9rem;
+  font-weight: var(--ifm-font-weight-bold);
+  white-space: nowrap;
+}

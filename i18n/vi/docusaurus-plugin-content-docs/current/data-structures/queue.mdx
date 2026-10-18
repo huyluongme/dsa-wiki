@@ -1,0 +1,379 @@
+---
+title: Hàng đợi (Queue)
+description: Một hàng chờ nơi phần tử mới xếp vào cuối và phần tử rời đi từ đầu, nên phần tử vào trước là phần tử ra trước.
+sidebar_position: 4
+---
+
+import Tabs from '@theme/Tabs';
+import TabItem from '@theme/TabItem';
+import ArrayDiagram from '@site/src/components/ArrayDiagram';
+
+# Hàng đợi (Queue)
+
+**Hàng đợi** là một hàng chờ: phần tử mới xếp vào cuối hàng, và phần tử rời đi từ đầu hàng.
+
+## Ý tưởng
+
+Hãy hình dung hàng người xếp trước quầy bán vé. Người đến sau xếp vào cuối hàng, và người đứng ở đầu hàng được phục vụ trước. Không ai chen ngang, và không ai rời đi từ giữa hàng. Người đến đầu tiên là người được phục vụ đầu tiên.
+
+Giới khoa học máy tính gọi điều này là **vào trước, ra trước** (first in, first out), viết tắt là **FIFO**. Nó ngược lại với [ngăn xếp](./stack.mdx): ngăn xếp phục vụ phần tử mới nhất trước, hàng đợi phục vụ phần tử cũ nhất trước.
+
+Hàng đợi chỉ cần vài thao tác:
+
+- **enqueue**: xếp vào cuối hàng.
+- **dequeue**: rời hàng từ đầu hàng. Phần tử được đưa cho bạn.
+- **peek** (còn gọi là **front**): nhìn phần tử ở đầu hàng mà không lấy ra.
+- **is empty**: kiểm tra xem có ai đang chờ không.
+
+<ArrayDiagram name="hàng đợi" items={[10, 20, 30]} hideIndex marks={{0: 'đầu', 2: 'cuối'}} />
+
+Ở đây `10` đến đầu tiên, nên nó sẽ được phục vụ đầu tiên.
+
+Giống ngăn xếp, hàng đợi là một **quy tắc** về cách bạn dùng một tập hợp, không phải một cách bố trí cụ thể trong bộ nhớ.
+
+## Cách hoạt động
+
+### Enqueue và dequeue
+
+Đây là một hàng đợi thay đổi theo thời gian. Đầu bên trái là đầu hàng và đầu bên phải là cuối hàng:
+
+```text
+bắt đầu:        (rỗng)
+enqueue 10:     10
+enqueue 20:     10 20
+enqueue 30:     10 20 30
+dequeue -> 10:  20 30
+dequeue -> 20:  30
+```
+
+### Cách dựng
+
+- **Bằng danh sách liên kết.** Giữ một con trỏ tới nút đầu tiên (đầu hàng) và một con trỏ tới nút cuối cùng (cuối hàng). Enqueue thêm một nút ở cuối và dequeue bỏ nút ở đầu. Cả hai đều tức thì, như bạn đã thấy ở trang [Danh sách liên kết](./linked-list.mdx). Đây là lý do con trỏ đuôi quan trọng.
+- **Bằng mảng.** Ở đây có một cái bẫy. Nếu đầu hàng luôn nằm ở chỉ số 0, mỗi lần dequeue khiến mọi người phải dịch sang trái một ghế, và bạn biết từ trang [Mảng](./array.mdx) rằng việc này chậm.
+
+Cách khắc phục là **hàng đợi vòng** (circular queue, còn gọi là ring buffer). Không ai phải dịch chỗ. Thay vào đó, bạn nhớ đầu hàng đang ở đâu, và khi đi quá ghế cuối cùng của mảng, bạn quay vòng về ghế 0, như thể các ghế được xếp thành một vòng tròn. Hãy xem một hàng đợi có chỗ cho 4 phần tử:
+
+<ArrayDiagram name="thêm 10, 20, 30" labelWidth="11rem" items={[10, 20, 30, null]} marks={{0: 'đầu', 2: 'cuối'}} />
+
+<ArrayDiagram name="lấy ra 2 lần" labelWidth="11rem" items={[null, null, 30, null]} hideIndex marks={{2: 'đầu=cuối'}} />
+
+<ArrayDiagram name="thêm 40, 50, 60" labelWidth="11rem" items={[50, 60, 30, 40]} hideIndex marks={{1: 'cuối', 2: 'đầu'}} />
+
+Sau hai lần dequeue, đầu hàng chuyển từ ghế 0 sang ghế 2, và không có gì bị dịch chỗ. Rồi `40` ngồi vào ghế 3, `50` quay vòng về ghế 0, và `60` ngồi vào ghế 1. Hàng, từ đầu đến cuối, là `30 40 50 60`. Việc "quay vòng" được làm bằng phép chia lấy dư: ghế sau ghế 3 là `(3 + 1) % 4`, bằng 0.
+
+### Các loại hàng đợi liên quan
+
+- **Deque** (phát âm giống từ "deck", viết tắt của double-ended queue, tức hàng đợi hai đầu) cho phép thêm và xóa ở **cả hai** đầu. Nó là dạng tổng quát của cả ngăn xếp lẫn hàng đợi.
+- **Hàng đợi ưu tiên** (priority queue) phục vụ phần tử quan trọng nhất trước thay vì phần tử cũ nhất. Nó thường được dựng bằng [heap](./heap.mdx).
+
+### Khi hàng đợi rỗng
+
+Dequeue hoặc peek một hàng đợi rỗng là một lỗi, giống như pop một ngăn xếp rỗng. Hãy kiểm tra xem hàng đợi có rỗng không trước. Một số ngôn ngữ cho bạn lựa chọn: Java có `remove()`, báo lỗi khi hàng đợi rỗng, và `poll()`, trả về `null` thay vì báo lỗi.
+
+## Code
+
+Hầu hết ngôn ngữ đã có sẵn hàng đợi. Trong C++ là `std::queue`, trong Python là `collections.deque`, và trong Java là `ArrayDeque` dùng qua interface `Queue`. C không có sẵn.
+
+### Enqueue, dequeue và peek
+
+<Tabs groupId="language">
+  <TabItem value="c" label="C" default>
+
+Thư viện chuẩn của C không có hàng đợi. Hãy tự dựng, như hàng đợi vòng ở bên dưới.
+
+  </TabItem>
+  <TabItem value="cpp" label="C++">
+
+```cpp title="basics.cpp"
+#include <iostream>
+#include <queue>
+
+int main() {
+    std::queue<int> queue;  // một hàng đợi rỗng
+    queue.push(10);         // enqueue
+    queue.push(20);
+    queue.push(30);  // cuối hàng giờ là 30
+
+    std::cout << "peek " << queue.front() << "\n";  // peek 10
+
+    std::cout << "dequeue " << queue.front() << "\n";  // dequeue 10
+    queue.pop();  // pop() bỏ phần tử đầu nhưng không trả về nó
+
+    std::cout << "dequeue " << queue.front() << "\n";  // dequeue 20
+    queue.pop();
+
+    std::cout << "size " << queue.size() << "\n";  // size 1
+}
+```
+
+  </TabItem>
+  <TabItem value="python" label="Python">
+
+```python title="basics.py"
+from collections import deque
+
+queue = deque()   # một hàng đợi rỗng
+queue.append(10)  # enqueue
+queue.append(20)
+queue.append(30)  # cuối hàng giờ là 30
+
+print("peek", queue[0])                # peek 10
+print("dequeue", queue.popleft())      # dequeue 10
+print("dequeue", queue.popleft())      # dequeue 20
+print("size", len(queue))              # size 1
+```
+
+  </TabItem>
+  <TabItem value="java" label="Java">
+
+```java title="Basics.java"
+import java.util.ArrayDeque;
+import java.util.Queue;
+
+public class Basics {
+    public static void main(String[] args) {
+        Queue<Integer> queue = new ArrayDeque<>();  // hàng đợi rỗng
+        queue.offer(10);  // enqueue
+        queue.offer(20);
+        queue.offer(30);  // cuối hàng giờ là 30
+
+        System.out.println("peek " + queue.peek());     // peek 10
+        System.out.println("dequeue " + queue.poll());  // dequeue 10
+        System.out.println("dequeue " + queue.poll());  // dequeue 20
+        System.out.println("size " + queue.size());     // size 1
+    }
+}
+```
+
+  </TabItem>
+</Tabs>
+
+### Dựng một hàng đợi vòng
+
+Đây là hàng đợi trong các hình ở trên: chỗ cho 4 phần tử, với đầu hàng di chuyển và quay vòng. Nó giữ thêm biến `size` bên cạnh `front`, vì nếu chỉ có chỉ số đầu và chỉ số cuối, bạn không thể phân biệt một hàng đợi đầy với một hàng đợi rỗng. Để code ngắn, nó không kiểm tra hàng đợi rỗng hay đầy. Code thực tế nên kiểm tra.
+
+<Tabs groupId="language">
+  <TabItem value="c" label="C" default>
+
+```c title="circular.c"
+#include <stdio.h>
+
+#define CAPACITY 4
+
+typedef struct {
+    int items[CAPACITY];
+    int front;  // chỉ số của phần tử đầu
+    int size;   // số phần tử đang có trong hàng đợi
+} Queue;
+
+void enqueue(Queue *q, int value) {
+    int back = (q->front + q->size) % CAPACITY;  // ghế trống kế tiếp
+    q->items[back] = value;
+    q->size++;
+}
+
+int dequeue(Queue *q) {
+    int value = q->items[q->front];
+    q->front = (q->front + 1) % CAPACITY;  // quay vòng ở cuối mảng
+    q->size--;
+    return value;
+}
+
+int main(void) {
+    Queue q = {.front = 0, .size = 0};
+    enqueue(&q, 10);
+    enqueue(&q, 20);
+    enqueue(&q, 30);
+    dequeue(&q);      // 10 rời đi
+    dequeue(&q);      // 20 rời đi, đầu hàng giờ ở chỉ số 2
+    enqueue(&q, 40);  // vào chỉ số 3
+    enqueue(&q, 50);  // quay vòng về chỉ số 0
+    enqueue(&q, 60);  // vào chỉ số 1
+
+    while (q.size > 0) {
+        printf("%d ", dequeue(&q));  // 30 40 50 60
+    }
+    printf("\n");
+    return 0;
+}
+```
+
+  </TabItem>
+  <TabItem value="cpp" label="C++">
+
+```cpp title="circular.cpp"
+#include <iostream>
+
+const int CAPACITY = 4;
+
+struct Queue {
+    int items[CAPACITY];
+    int front = 0;  // chỉ số của phần tử đầu
+    int size = 0;   // số phần tử đang có trong hàng đợi
+};
+
+void enqueue(Queue &q, int value) {
+    int back = (q.front + q.size) % CAPACITY;  // ghế trống kế tiếp
+    q.items[back] = value;
+    q.size++;
+}
+
+int dequeue(Queue &q) {
+    int value = q.items[q.front];
+    q.front = (q.front + 1) % CAPACITY;  // quay vòng ở cuối mảng
+    q.size--;
+    return value;
+}
+
+int main() {
+    Queue q;
+    enqueue(q, 10);
+    enqueue(q, 20);
+    enqueue(q, 30);
+    dequeue(q);       // 10 rời đi
+    dequeue(q);       // 20 rời đi, đầu hàng giờ ở chỉ số 2
+    enqueue(q, 40);   // vào chỉ số 3
+    enqueue(q, 50);   // quay vòng về chỉ số 0
+    enqueue(q, 60);   // vào chỉ số 1
+
+    while (q.size > 0) {
+        std::cout << dequeue(q) << " ";  // 30 40 50 60
+    }
+    std::cout << "\n";
+}
+```
+
+  </TabItem>
+  <TabItem value="python" label="Python">
+
+```python title="circular.py"
+class CircularQueue:
+    def __init__(self, capacity):
+        self.items = [None] * capacity
+        self.front = 0  # chỉ số của phần tử đầu
+        self.size = 0   # số phần tử đang có trong hàng đợi
+
+    def enqueue(self, value):
+        # ghế trống kế tiếp
+        back = (self.front + self.size) % len(self.items)
+        self.items[back] = value
+        self.size += 1
+
+    def dequeue(self):
+        value = self.items[self.front]
+        # quay vòng ở cuối mảng
+        self.front = (self.front + 1) % len(self.items)
+        self.size -= 1
+        return value
+
+
+q = CircularQueue(4)
+q.enqueue(10)
+q.enqueue(20)
+q.enqueue(30)
+q.dequeue()      # 10 rời đi
+q.dequeue()      # 20 rời đi, đầu hàng giờ ở chỉ số 2
+q.enqueue(40)    # vào chỉ số 3
+q.enqueue(50)    # quay vòng về chỉ số 0
+q.enqueue(60)    # vào chỉ số 1
+
+while q.size > 0:
+    print(q.dequeue(), end=" ")  # 30 40 50 60
+print()
+```
+
+  </TabItem>
+  <TabItem value="java" label="Java">
+
+```java title="Circular.java"
+public class Circular {
+    static final int CAPACITY = 4;
+
+    static class Queue {
+        int[] items = new int[CAPACITY];
+        int front = 0;  // chỉ số của phần tử đầu
+        int size = 0;   // số phần tử đang có trong hàng đợi
+
+        void enqueue(int value) {
+            int back = (front + size) % CAPACITY;  // ghế trống kế tiếp
+            items[back] = value;
+            size++;
+        }
+
+        int dequeue() {
+            int value = items[front];
+            front = (front + 1) % CAPACITY;  // quay vòng ở cuối mảng
+            size--;
+            return value;
+        }
+    }
+
+    public static void main(String[] args) {
+        Queue q = new Queue();
+        q.enqueue(10);
+        q.enqueue(20);
+        q.enqueue(30);
+        q.dequeue();      // 10 rời đi
+        q.dequeue();      // 20 rời đi, đầu hàng giờ ở chỉ số 2
+        q.enqueue(40);    // vào chỉ số 3
+        q.enqueue(50);    // quay vòng về chỉ số 0
+        q.enqueue(60);    // vào chỉ số 1
+
+        while (q.size > 0) {
+            System.out.print(q.dequeue() + " ");  // 30 40 50 60
+        }
+        System.out.println();
+    }
+}
+```
+
+  </TabItem>
+</Tabs>
+
+## Độ phức tạp
+
+Nếu O(1) và O(n) còn mới với bạn, hãy xem trang [Mảng](./array.mdx).
+
+| Thao tác                     | Chi phí | Nói bằng lời                                                                |
+| ---------------------------- | ------- | --------------------------------------------------------------------------- |
+| Enqueue                      | $O(1)$  | Xếp vào cuối. Không ai khác phải dịch chỗ.                                  |
+| Dequeue                      | $O(1)$  | Rời từ đầu hàng. Không ai khác phải dịch chỗ. (Chỉ khi dựng đúng cách, xem bên dưới.) |
+| Peek                         | $O(1)$  | Nhìn đầu hàng.                                                              |
+| Is empty                     | $O(1)$  | Kiểm tra một con số.                                                        |
+| Tìm một giá trị ở giữa       | $O(n)$  | Bạn sẽ phải dequeue từng phần tử một.                                       |
+| Bộ nhớ sử dụng               | $O(n)$  | Mỗi phần tử một chỗ.                                                        |
+
+Mức $O(1)$ của dequeue đúng với danh sách liên kết có con trỏ đuôi, với mảng vòng, và với các hàng đợi có sẵn. Một mảng thường bắt mọi người dịch chỗ sau mỗi lần dequeue thì tốn $O(n)$.
+
+## Khi nào nên dùng
+
+Hàng đợi rất phù hợp khi mọi thứ cần được xử lý **theo thứ tự đến**:
+
+- **Hàng chờ.** Các lệnh in chờ máy in, các yêu cầu chờ máy chủ, các tác vụ chờ đến lượt.
+- **Bộ đệm.** Dữ liệu đến nhanh hơn khả năng xử lý, nên nó xếp hàng chờ.
+- **Tìm kiếm theo chiều rộng.** Duyệt một [đồ thị](./graph.mdx) hoặc một [cây](./tree.mdx) theo từng tầng dùng một hàng đợi.
+
+Hãy xem xét cấu trúc khác khi:
+
+- Bạn cần phần tử **mới nhất** trước. Đó là [ngăn xếp](./stack.mdx).
+- Bạn cần phần tử **quan trọng nhất** trước. Đó là hàng đợi ưu tiên, thường dựng bằng [heap](./heap.mdx).
+- Bạn cần truy cập phần tử bất kỳ theo vị trí. [Mảng](./array.mdx) làm việc đó.
+
+:::warning[Lỗi thường gặp]
+- **Dùng `list` của Python làm hàng đợi.** `list.pop(0)` khiến mọi phần tử khác phải dịch chỗ, nên rất chậm. Hãy dùng `collections.deque` và `popleft()`. Tài liệu hướng dẫn của Python cũng khuyên như vậy.
+- **Dequeue hoặc peek một hàng đợi rỗng.** Hãy kiểm tra trước. Trong C++, `front()` và `pop()` trên hàng đợi rỗng là hành vi không xác định.
+- **Mong `pop()` của C++ trả về giá trị.** Nó không trả về gì. Hãy đọc `front()` trước, rồi gọi `pop()`.
+- **Nhầm hai đầu.** Phần tử xếp vào ở cuối và rời đi từ đầu.
+- **Nhầm hàng đợi vòng đầy với rỗng.** Giữ thêm biến `size`, như ở trên, tránh được vấn đề này.
+:::
+
+## Nguồn tham khảo
+
+Các thông tin trên trang này được đối chiếu với:
+
+- [Queue (abstract data type), Wikipedia](https://en.wikipedia.org/wiki/Queue_%28abstract_data_type%29)
+- [std::queue, cppreference](https://en.cppreference.com/w/cpp/container/queue)
+- [collections.deque, The Python Standard Library](https://docs.python.org/3/library/collections.html#collections.deque)
+- [Using lists as queues, The Python Tutorial](https://docs.python.org/3/tutorial/datastructures.html#using-lists-as-queues)
+- [Queue, Java SE 21 API](https://docs.oracle.com/en/java/javase/21/docs/api/java.base/java/util/Queue.html)
+- [ArrayDeque, Java SE 21 API](https://docs.oracle.com/en/java/javase/21/docs/api/java.base/java/util/ArrayDeque.html)

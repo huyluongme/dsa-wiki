@@ -19,7 +19,7 @@ Hãy hình dung một hàng ghế đánh số trong rạp chiếu phim. Mỗi gh
 Mảng hoạt động y như vậy:
 
 - **Các ghế** là các **phần tử** của mảng. Chúng nằm sát nhau trong bộ nhớ của máy tính.
-- **Số ghế** gọi là **chỉ số** (index). Việc đếm bắt đầu từ **0**, không phải 1, nên một mảng có 5 phần tử sẽ có chỉ số từ 0 đến 4. Ai mới học cũng thấy lạ lúc đầu, rồi sẽ quen rất nhanh.
+- **Số ghế** gọi là **chỉ số** (index). Việc đếm bắt đầu từ **0**, không phải 1 (trong C, C++, Python, Java và hầu hết các ngôn ngữ khác), nên một mảng có 5 phần tử sẽ có chỉ số từ 0 đến 4. Ai mới học cũng thấy lạ lúc đầu, rồi sẽ quen rất nhanh.
 - Bạn có thể **đi thẳng đến bất kỳ phần tử nào** nhờ chỉ số của nó. Không cần tìm kiếm.
 
 <ArrayDiagram name="scores" indexLabel="chỉ số" items={[10, 20, 30, 40, 50]} />
@@ -85,14 +85,14 @@ Nếu bạn biết chỉ số, việc đọc là tức thì. Nhưng nếu bạn 
 
 Một mảng cơ bản có số ghế cố định, quyết định ngay lúc tạo. Nếu bạn cần thêm chỗ thì sao?
 
-Hầu hết ngôn ngữ cung cấp **mảng tự mở rộng** (còn gọi là mảng động, dynamic array): `list` trong Python, `std::vector` trong C++, `ArrayList` trong Java. Khi hàng ghế đầy, nó dựng một hàng mới dài gấp đôi, dời mọi người sang đó, rồi bỏ hàng cũ. C không có sẵn loại này, nên bạn tự làm bằng `malloc` và `realloc`, như đoạn code bên dưới.
+Hầu hết ngôn ngữ cung cấp **mảng tự mở rộng** (còn gọi là mảng động, dynamic array): `list` trong Python, `std::vector` trong C++, `ArrayList` trong Java. Khi hàng ghế đầy, nó dựng một hàng mới lớn hơn (thường dài gấp 1,5 đến 2 lần, tùy ngôn ngữ), dời mọi người sang đó, rồi bỏ hàng cũ. C không có sẵn loại này, nên bạn tự làm bằng `malloc` và `realloc`, như đoạn code bên dưới. (`list` của Python và `ArrayList` của Java thật ra lưu tham chiếu đến các phần tử, nhưng mọi điều trên trang này vẫn đúng với chúng.)
 
-Dời tất cả mọi người thì chậm, nhưng hiếm khi xảy ra. Sau khi hàng ghế được nhân đôi, còn rất nhiều chỗ trống, nên bạn thêm được nhiều phần tử trước lần dời kế tiếp. Vì vậy **tính trung bình**, thêm vào cuối vẫn nhanh.
+Dời tất cả mọi người thì chậm, nhưng hiếm khi xảy ra. Sau khi hàng ghế được mở rộng, còn rất nhiều chỗ trống, nên bạn thêm được nhiều phần tử trước lần dời kế tiếp. Vì vậy **tính trung bình**, thêm vào cuối vẫn nhanh.
 
 <details>
 <summary>Tùy chọn: vì sao "tính trung bình" lại nhanh</summary>
 
-Thêm $n$ phần tử lần lượt vào một mảng tự mở rộng ban đầu rỗng, mỗi lần đầy thì nhân đôi. Việc dời xảy ra khi kích thước đạt 1, 2, 4, 8, ... và tổng số phần tử đã dời là:
+Thêm $n$ phần tử lần lượt vào một mảng tự mở rộng ban đầu rỗng. Để phép tính đơn giản, giả sử mỗi lần đầy thì nó nhân đôi. (Các bản cài đặt thực tế dùng hệ số từ khoảng 1,1 đến 2, và kết luận vẫn như vậy.) Việc dời xảy ra khi kích thước đạt 1, 2, 4, 8, ... và tổng số phần tử đã dời là:
 
 $$
 1 + 2 + 4 + \dots + 2^k = 2^{k+1} - 1 < 2n \qquad (2^k < n)
@@ -283,7 +283,7 @@ size = 5
 size = insert_at(arr, size, 2, 25)  # 10 20 25 30 40 50
 size = remove_at(arr, size, 0)      # 20 25 30 40 50
 
-print(arr[:size])
+print(*arr[:size])
 ```
 
   </TabItem>
@@ -443,11 +443,21 @@ Mảng rất phù hợp khi:
 
 Hãy xem xét cấu trúc khác khi:
 
-- Bạn thường xuyên chèn hoặc xóa ở đầu hoặc giữa. Danh sách liên kết (linked list) hoặc deque phù hợp hơn.
-- Bạn tra cứu phần tử theo tên hoặc khóa thay vì theo vị trí. Bảng băm (hash table) làm việc đó nhanh hơn nhiều.
+- Bạn thường xuyên chèn hoặc xóa ở đầu hoặc giữa. [Danh sách liên kết](./linked-list.mdx) (linked list) hoặc [deque](./queue.mdx) phù hợp hơn.
+- Bạn tra cứu phần tử theo tên hoặc khóa thay vì theo vị trí. [Bảng băm](./hash-table.mdx) (hash table) làm việc đó nhanh hơn nhiều.
 
 :::warning[Lỗi thường gặp]
 - **Lệch một đơn vị.** Mảng có 5 phần tử thì chỉ số từ 0 đến 4. `scores[5]` không tồn tại.
-- **C và C++ không có lưới an toàn.** Đi quá cuối mảng không báo lỗi. Chương trình đọc hoặc ghi vào bất cứ thứ gì đang nằm cạnh mảng. Nó có thể bị crash, hoặc âm thầm cho kết quả sai.
+- **C và C++ không có lưới an toàn.** Đi quá cuối mảng không báo lỗi. Chương trình đọc hoặc ghi vào bất cứ thứ gì đang nằm cạnh mảng. Nó có thể bị crash, hoặc âm thầm cho kết quả sai. (Trong C++, `vector::at(i)` có kiểm tra và báo lỗi.)
 - **Vòng lặp chậm.** Chèn hoặc xóa ở đầu mảng bên trong một vòng lặp khiến mọi người phải dịch chỗ mỗi lần, và một chương trình nhanh thành chậm.
 :::
+
+## Nguồn tham khảo
+
+Các thông tin trên trang này được đối chiếu với:
+
+- [Array (data structure), Wikipedia](https://en.wikipedia.org/wiki/Array_%28data_structure%29)
+- [Dynamic array, Wikipedia](https://en.wikipedia.org/wiki/Dynamic_array)
+- [TimeComplexity, Python Wiki](https://wiki.python.org/moin/TimeComplexity)
+- [ArrayList, Java SE 21 API](https://docs.oracle.com/en/java/javase/21/docs/api/java.base/java/util/ArrayList.html)
+- [std::vector::insert, cppreference](https://en.cppreference.com/w/cpp/container/vector/insert)

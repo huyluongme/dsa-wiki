@@ -19,7 +19,7 @@ Picture a row of numbered seats in a cinema. Every seat holds one person, the se
 An array works the same way:
 
 - The **seats** are the array's **items**. They sit side by side in the computer's memory.
-- The **seat numbers** are called **indexes**. Counting starts at **0**, not 1, so an array with 5 items has indexes 0 to 4. This surprises everyone at first, and you get used to it quickly.
+- The **seat numbers** are called **indexes**. Counting starts at **0**, not 1 (in C, C++, Python, Java and most other languages), so an array with 5 items has indexes 0 to 4. This surprises everyone at first, and you get used to it quickly.
 - You can go **straight to any item** using its index. No searching needed.
 
 <ArrayDiagram name="scores" items={[10, 20, 30, 40, 50]} />
@@ -85,14 +85,14 @@ If you know the index, reading is instant. But if you only know the **value**, f
 
 A basic array has a fixed number of seats, decided when you create it. What if you need more?
 
-Most languages offer a **growable array** (also called a dynamic array): `list` in Python, `std::vector` in C++, `ArrayList` in Java. When the row is full, it builds a new row twice as long, moves everyone over, and throws the old row away. C has no ready-made one, so you do it yourself with `malloc` and `realloc`, as the code below shows.
+Most languages offer a **growable array** (also called a dynamic array): `list` in Python, `std::vector` in C++, `ArrayList` in Java. When the row is full, it builds a bigger row (often 1.5 to 2 times as long, depending on the language), moves everyone over, and throws the old row away. C has no ready-made one, so you do it yourself with `malloc` and `realloc`, as the code below shows. (Python's `list` and Java's `ArrayList` actually store references to their items, but everything on this page works the same way for them.)
 
-Moving everyone is slow, but it happens rarely. After the row doubles, there is plenty of free room, so you can add many items before the next move. So **on average**, adding to the end is still fast.
+Moving everyone is slow, but it happens rarely. After the row grows, there is plenty of free room, so you can add many items before the next move. So **on average**, adding to the end is still fast.
 
 <details>
 <summary>Optional: why "on average" is fast</summary>
 
-Add $n$ items one by one to an empty growable array that doubles when full. Moves happen when the size reaches 1, 2, 4, 8, ... and the total number of items moved is:
+Add $n$ items one by one to an empty growable array. To keep the math simple, assume it doubles when full. (Real implementations use factors between about 1.1 and 2, and the conclusion is the same.) Moves happen when the size reaches 1, 2, 4, 8, ... and the total number of items moved is:
 
 $$
 1 + 2 + 4 + \dots + 2^k = 2^{k+1} - 1 < 2n \qquad (2^k < n)
@@ -283,7 +283,7 @@ size = 5
 size = insert_at(arr, size, 2, 25)  # 10 20 25 30 40 50
 size = remove_at(arr, size, 0)      # 20 25 30 40 50
 
-print(arr[:size])
+print(*arr[:size])
 ```
 
   </TabItem>
@@ -443,11 +443,21 @@ An array is a great fit when:
 
 Look at another structure when:
 
-- You often insert or remove at the front or middle. A linked list or a deque fits better.
-- You look items up by a name or key instead of a position. A hash table is much faster at that.
+- You often insert or remove at the front or middle. A [linked list](./linked-list.mdx) or a [deque](./queue.mdx) fits better.
+- You look items up by a name or key instead of a position. A [hash table](./hash-table.mdx) is much faster at that.
 
 :::warning[Common mistakes]
 - **Off by one.** An array with 5 items has indexes 0 to 4. `scores[5]` does not exist.
-- **No safety net in C and C++.** Going past the end does not raise an error. The program reads or writes whatever happens to be next to the array. It may crash, or quietly give wrong answers.
+- **No safety net in C and C++.** Going past the end does not raise an error. The program reads or writes whatever happens to be next to the array. It may crash, or quietly give wrong answers. (In C++, `vector::at(i)` does check and reports an error.)
 - **Slow loops.** Inserting or removing at the front inside a loop makes everyone shift every time, so a fast program becomes a slow one.
 :::
+
+## Sources
+
+The facts on this page were checked against:
+
+- [Array (data structure), Wikipedia](https://en.wikipedia.org/wiki/Array_%28data_structure%29)
+- [Dynamic array, Wikipedia](https://en.wikipedia.org/wiki/Dynamic_array)
+- [TimeComplexity, Python Wiki](https://wiki.python.org/moin/TimeComplexity)
+- [ArrayList, Java SE 21 API](https://docs.oracle.com/en/java/javase/21/docs/api/java.base/java/util/ArrayList.html)
+- [std::vector::insert, cppreference](https://en.cppreference.com/w/cpp/container/vector/insert)

@@ -1,0 +1,379 @@
+---
+title: Ngăn xếp (Stack)
+description: Một chồng mà bạn chỉ được thêm vào đỉnh và lấy ra từ đỉnh, nên phần tử vào sau cùng là phần tử ra đầu tiên.
+sidebar_position: 3
+---
+
+import Tabs from '@theme/Tabs';
+import TabItem from '@theme/TabItem';
+import StackDiagram from '@site/src/components/StackDiagram';
+
+# Ngăn xếp (Stack)
+
+**Ngăn xếp** là một chồng đồ: bạn chỉ được đặt thêm lên đỉnh, và chỉ được lấy đồ từ đỉnh.
+
+## Ý tưởng
+
+Hãy hình dung một chồng đĩa trong căng-tin. Đĩa sạch được đặt lên trên cùng của chồng. Khi ai đó cần một cái đĩa, họ lấy cái ở trên cùng. Cái đĩa bạn đặt lên sau cùng là cái rời đi đầu tiên. Không ai rút một cái đĩa từ giữa chồng ra.
+
+Giới khoa học máy tính gọi điều này là **vào sau, ra trước** (last in, first out), viết tắt là **LIFO**.
+
+Ngăn xếp chỉ cần vài thao tác:
+
+- **push**: đặt một phần tử lên đỉnh.
+- **pop**: lấy phần tử ở đỉnh ra và đưa cho bạn.
+- **peek** (còn gọi là **top**): nhìn phần tử ở đỉnh mà không lấy ra.
+- **is empty**: kiểm tra xem còn gì không.
+
+<StackDiagram items={[10, 20, 30]} />
+
+Ở đây `10` vào đầu tiên và `30` vào sau cùng, nên `30` là phần tử ra đầu tiên.
+
+Ngăn xếp là một **quy tắc** về cách bạn dùng một tập hợp, không phải một cách bố trí cụ thể trong bộ nhớ. Bạn có thể dựng nó trên một mảng hoặc một danh sách liên kết.
+
+## Cách hoạt động
+
+### Push và pop
+
+Đây là một ngăn xếp lớn lên rồi nhỏ lại. Đầu bên trái là đáy chồng, đầu bên phải là đỉnh:
+
+```text
+bắt đầu:     (rỗng)
+push 10:     10
+push 20:     10 20
+push 30:     10 20 30
+pop -> 30:   10 20
+pop -> 20:   10
+```
+
+### Cách dựng
+
+- **Bằng mảng.** Cuối mảng là đỉnh. Push thêm một phần tử vào cuối và pop bỏ phần tử cuối. Cả hai đều nhanh, như bạn đã thấy ở trang [Mảng](./array.mdx).
+- **Bằng danh sách liên kết.** Đầu danh sách là đỉnh. Push chèn vào đầu và pop xóa ở đầu. Cả hai cũng tức thì, như bạn đã thấy ở trang [Danh sách liên kết](./linked-list.mdx).
+
+Dù cách nào, các phần tử chỉ được thêm hoặc xóa ở một đầu, nên những trường hợp chậm của các cấu trúc đó không bao giờ xảy ra.
+
+### Khi ngăn xếp rỗng hoặc đầy
+
+Pop hoặc peek một ngăn xếp rỗng là một lỗi, gọi là **underflow** (tràn dưới). Hãy kiểm tra xem ngăn xếp có rỗng không trước. Nếu không, kết quả tùy ngôn ngữ: Python và Java báo lỗi, còn C và C++ làm một việc không xác định, có thể crash hoặc trả về giá trị rác.
+
+Ngăn xếp có chỗ cố định cũng có thể bị đầy. Push vào một ngăn xếp đã đầy gọi là **overflow** (tràn).
+
+### Ngăn xếp bạn đã dùng sẵn: call stack
+
+Mỗi khi một hàm gọi một hàm khác, máy tính đặt lên một ngăn xếp một mẩu ghi chú về chỗ cần tiếp tục khi hàm mới chạy xong. Khi hàm đó kết thúc, mẩu ghi chú của nó được pop ra. Đó là **call stack** (ngăn xếp lời gọi). Nhờ nó mà một hàm có thể gọi chính nó (gọi là đệ quy) và mỗi lần gọi giữ biến riêng của mình.
+
+Call stack có chỗ hạn chế. Nếu các lời gọi chồng lên vượt quá chỗ đó, ví dụ do một hàm cứ gọi chính nó mãi, chương trình sẽ gặp **stack overflow** và bị crash.
+
+## Code
+
+Hầu hết ngôn ngữ đã có sẵn ngăn xếp để dùng. Trong C++ là `std::stack`. Trong Python một `list` là đủ, dùng `append` để push và `pop` để pop. Trong Java lựa chọn được khuyến nghị là `ArrayDeque` (lớp `Stack` cũ không được khuyến khích). C không có sẵn, nên bản C dựng một ngăn xếp nhỏ trên một mảng. Để code ngắn, ngăn xếp C không kiểm tra rỗng hay đầy. Code thực tế nên kiểm tra.
+
+### Push, pop và peek
+
+<Tabs groupId="language">
+  <TabItem value="c" label="C" default>
+
+```c title="basics.c"
+#include <stdio.h>
+
+#define CAPACITY 8
+
+typedef struct {
+    int items[CAPACITY];
+    int size;  // số phần tử đang có trong ngăn xếp
+} Stack;
+
+void push(Stack *s, int value) {
+    s->items[s->size] = value;  // đặt lên đỉnh...
+    s->size++;                  // ...và đếm nó
+}
+
+int pop(Stack *s) {
+    s->size--;  // phần tử ở đỉnh rời đi
+    return s->items[s->size];
+}
+
+int peek(const Stack *s) {
+    return s->items[s->size - 1];  // nhìn đỉnh, không lấy ra
+}
+
+int main(void) {
+    Stack stack = {.size = 0};  // một ngăn xếp rỗng
+    push(&stack, 10);
+    push(&stack, 20);
+    push(&stack, 30);  // đỉnh giờ là 30
+
+    printf("peek %d\n", peek(&stack));  // peek 30
+    printf("pop %d\n", pop(&stack));    // pop 30
+    printf("pop %d\n", pop(&stack));    // pop 20
+    printf("size %d\n", stack.size);    // size 1
+    return 0;
+}
+```
+
+  </TabItem>
+  <TabItem value="cpp" label="C++">
+
+```cpp title="basics.cpp"
+#include <iostream>
+#include <stack>
+
+int main() {
+    std::stack<int> stack;  // một ngăn xếp rỗng
+    stack.push(10);
+    stack.push(20);
+    stack.push(30);  // đỉnh giờ là 30
+
+    std::cout << "peek " << stack.top() << "\n";  // peek 30
+
+    std::cout << "pop " << stack.top() << "\n";  // pop 30
+    stack.pop();  // pop() bỏ phần tử đỉnh nhưng không trả về nó
+
+    std::cout << "pop " << stack.top() << "\n";  // pop 20
+    stack.pop();
+
+    std::cout << "size " << stack.size() << "\n";  // size 1
+}
+```
+
+  </TabItem>
+  <TabItem value="python" label="Python">
+
+```python title="basics.py"
+stack = []  # ngăn xếp rỗng: một list có cuối là đỉnh
+stack.append(10)
+stack.append(20)
+stack.append(30)  # đỉnh giờ là 30
+
+print("peek", stack[-1])   # peek 30
+print("pop", stack.pop())  # pop 30
+print("pop", stack.pop())  # pop 20
+print("size", len(stack))  # size 1
+```
+
+  </TabItem>
+  <TabItem value="java" label="Java">
+
+```java title="Basics.java"
+import java.util.ArrayDeque;
+import java.util.Deque;
+
+public class Basics {
+    public static void main(String[] args) {
+        Deque<Integer> stack = new ArrayDeque<>();  // ngăn xếp rỗng
+        stack.push(10);
+        stack.push(20);
+        stack.push(30);  // đỉnh giờ là 30
+
+        System.out.println("peek " + stack.peek());  // peek 30
+        System.out.println("pop " + stack.pop());    // pop 30
+        System.out.println("pop " + stack.pop());    // pop 20
+        System.out.println("size " + stack.size());  // size 1
+    }
+}
+```
+
+  </TabItem>
+</Tabs>
+
+### Một ứng dụng kinh điển: kiểm tra ngoặc khớp nhau
+
+`([]{})` có được viết đúng không? Mỗi dấu ngoặc đóng phải đóng **dấu ngoặc mở gần nhất** còn đang mở. Đó chính xác là thứ ngăn xếp mang lại. Hãy push mọi dấu ngoặc mở. Khi gặp một dấu ngoặc đóng, hãy pop và kiểm tra hai dấu có khớp không. Cuối cùng, không được còn dấu nào đang mở.
+
+<Tabs groupId="language">
+  <TabItem value="c" label="C" default>
+
+```c title="brackets.c"
+#include <stdio.h>
+#include <string.h>
+
+// Trả về 1 nếu mọi dấu ngoặc đều được đóng đúng thứ tự.
+int is_balanced(const char *text) {
+    char stack[100];  // các dấu ngoặc còn đang mở
+    int size = 0;
+
+    for (size_t i = 0; i < strlen(text); i++) {
+        char c = text[i];
+        if (c == '(' || c == '[' || c == '{') {
+            if (size == 100) return 0;  // quá sâu so với bản demo này
+            stack[size++] = c;          // push một dấu ngoặc mở
+        } else if (c == ')' || c == ']' || c == '}') {
+            if (size == 0) return 0;    // không có gì để đóng
+            char open = stack[--size];  // pop dấu mở gần nhất
+            if ((c == ')' && open != '(') ||
+                (c == ']' && open != '[') ||
+                (c == '}' && open != '{')) return 0;  // sai loại
+        }
+    }
+    return size == 0;  // còn dấu nào đang mở không?
+}
+
+void show(const char *text) {
+    printf("%s\n", is_balanced(text) ? "yes" : "no");
+}
+
+int main(void) {
+    show("([]{})");  // yes
+    show("(]");      // no
+    show("((");      // no
+    show("");        // yes
+    return 0;
+}
+```
+
+  </TabItem>
+  <TabItem value="cpp" label="C++">
+
+```cpp title="brackets.cpp"
+#include <iostream>
+#include <stack>
+#include <string>
+
+// Trả về true nếu mọi dấu ngoặc đều được đóng đúng thứ tự.
+bool is_balanced(const std::string &text) {
+    std::stack<char> opened;  // các dấu ngoặc còn đang mở
+
+    for (char c : text) {
+        if (c == '(' || c == '[' || c == '{') {
+            opened.push(c);  // push một dấu ngoặc mở
+        } else if (c == ')' || c == ']' || c == '}') {
+            if (opened.empty()) return false;  // không có gì để đóng
+            char open = opened.top();  // dấu mở gần nhất
+            opened.pop();
+            if ((c == ')' && open != '(') ||
+                (c == ']' && open != '[') ||
+                (c == '}' && open != '{')) return false;  // sai loại
+        }
+    }
+    return opened.empty();  // còn dấu nào đang mở không?
+}
+
+void show(const std::string &text) {
+    std::cout << (is_balanced(text) ? "yes" : "no") << "\n";
+}
+
+int main() {
+    show("([]{})");  // yes
+    show("(]");      // no
+    show("((");      // no
+    show("");        // yes
+}
+```
+
+  </TabItem>
+  <TabItem value="python" label="Python">
+
+```python title="brackets.py"
+PAIRS = {")": "(", "]": "[", "}": "{"}  # đóng -> mở tương ứng
+
+
+def is_balanced(text):
+    """True nếu mọi dấu ngoặc đều được đóng đúng thứ tự."""
+    stack = []  # các dấu ngoặc còn đang mở
+    for c in text:
+        if c in "([{":
+            stack.append(c)  # push một dấu ngoặc mở
+        elif c in PAIRS:
+            if not stack or stack.pop() != PAIRS[c]:
+                return False  # không có gì để đóng, hoặc sai loại
+    return not stack  # còn dấu nào đang mở không?
+
+
+def show(text):
+    print("yes" if is_balanced(text) else "no")
+
+
+show("([]{})")  # yes
+show("(]")      # no
+show("((")      # no
+show("")        # yes
+```
+
+  </TabItem>
+  <TabItem value="java" label="Java">
+
+```java title="Brackets.java"
+import java.util.ArrayDeque;
+import java.util.Deque;
+
+public class Brackets {
+    // Trả về true nếu mọi dấu ngoặc đều được đóng đúng thứ tự.
+    static boolean isBalanced(String text) {
+        Deque<Character> stack = new ArrayDeque<>();  // còn đang mở
+        for (char c : text.toCharArray()) {
+            if (c == '(' || c == '[' || c == '{') {
+                stack.push(c);  // push một dấu ngoặc mở
+            } else if (c == ')' || c == ']' || c == '}') {
+                if (stack.isEmpty()) return false;  // không có ngoặc mở
+                char open = stack.pop();  // dấu mở gần nhất
+                if ((c == ')' && open != '(')
+                        || (c == ']' && open != '[')
+                        || (c == '}' && open != '{')) return false;
+            }
+        }
+        return stack.isEmpty();  // còn dấu nào đang mở không?
+    }
+
+    static void show(String text) {
+        System.out.println(isBalanced(text) ? "yes" : "no");
+    }
+
+    public static void main(String[] args) {
+        show("([]{})");  // yes
+        show("(]");      // no
+        show("((");      // no
+        show("");        // yes
+    }
+}
+```
+
+  </TabItem>
+</Tabs>
+
+## Độ phức tạp
+
+Nếu O(1) và O(n) còn mới với bạn, hãy xem trang [Mảng](./array.mdx).
+
+| Thao tác                     | Chi phí | Nói bằng lời                                                            |
+| ---------------------------- | ------- | ----------------------------------------------------------------------- |
+| Push                         | $O(1)$  | Đặt lên đỉnh. Không gì khác phải dịch chỗ. Mảng tự mở rộng chỉ chậm ở lần push hiếm hoi khiến nó phải mở rộng. |
+| Pop                          | $O(1)$  | Lấy khỏi đỉnh. Không gì khác phải dịch chỗ.                             |
+| Peek                         | $O(1)$  | Nhìn đỉnh.                                                              |
+| Is empty                     | $O(1)$  | Kiểm tra một con số.                                                    |
+| Tìm một giá trị ở giữa       | $O(n)$  | Bạn sẽ phải pop từng phần tử một. Ngăn xếp không sinh ra để làm việc này. |
+| Bộ nhớ sử dụng               | $O(n)$  | Mỗi phần tử một chỗ.                                                    |
+
+## Khi nào nên dùng
+
+Ngăn xếp rất phù hợp khi thứ **mới nhất** phải được xử lý trước:
+
+- **Hoàn tác (undo).** Việc bạn làm sau cùng là việc được hoàn tác đầu tiên.
+- **Quay lại.** Hãy nghĩ đến nút back của trình duyệt: trang bạn rời đi gần nhất là trang bạn quay về.
+- **Những thứ lồng nhau.** Dấu ngoặc, dấu nháy và thẻ HTML phải được đóng theo thứ tự ngược với lúc mở.
+- **Quay lui (backtracking).** Thử một đường đi, và khi bị kẹt thì quay về lựa chọn cuối cùng bạn đã làm. Tìm kiếm theo chiều sâu trong [đồ thị](./graph.mdx) hoạt động theo cách này.
+- **Lời gọi hàm.** Call stack chính là một ngăn xếp.
+
+Hãy xem xét cấu trúc khác khi:
+
+- Bạn cần phần tử **cũ nhất** trước. Đó là [hàng đợi](./queue.mdx).
+- Bạn cần truy cập phần tử bất kỳ theo vị trí. [Mảng](./array.mdx) làm việc đó.
+
+:::warning[Lỗi thường gặp]
+- **Pop hoặc peek một ngăn xếp rỗng.** Hãy kiểm tra xem nó có rỗng không trước.
+- **Mong `pop()` của C++ trả về giá trị.** Nó không trả về gì. Hãy đọc `top()` trước, rồi gọi `pop()`.
+- **Dùng lớp `Stack` cũ của Java.** Chính tài liệu của nó khuyên dùng `ArrayDeque` thay thế.
+- **Pop nhầm đầu trong Python.** Ngăn xếp pop từ cuối bằng `pop()`. Gọi `pop(0)` sẽ lấy phần tử ở đáy, và chậm.
+- **Đệ quy vô tận.** Một hàm cứ gọi chính nó không dừng sẽ làm đầy call stack và khiến chương trình crash.
+:::
+
+## Nguồn tham khảo
+
+Các thông tin trên trang này được đối chiếu với:
+
+- [Stack (abstract data type), Wikipedia](https://en.wikipedia.org/wiki/Stack_%28abstract_data_type%29)
+- [Call stack, Wikipedia](https://en.wikipedia.org/wiki/Call_stack)
+- [std::stack, cppreference](https://en.cppreference.com/w/cpp/container/stack)
+- [Stack, Java SE 21 API](https://docs.oracle.com/en/java/javase/21/docs/api/java.base/java/util/Stack.html)
+- [ArrayDeque, Java SE 21 API](https://docs.oracle.com/en/java/javase/21/docs/api/java.base/java/util/ArrayDeque.html)
+- [Using lists as stacks, The Python Tutorial](https://docs.python.org/3/tutorial/datastructures.html#using-lists-as-stacks)

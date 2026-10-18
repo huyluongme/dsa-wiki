@@ -1,0 +1,379 @@
+---
+title: Queue
+description: A line where new items join at the back and items leave from the front, so the first item in is the first item out.
+sidebar_position: 4
+---
+
+import Tabs from '@theme/Tabs';
+import TabItem from '@theme/TabItem';
+import ArrayDiagram from '@site/src/components/ArrayDiagram';
+
+# Queue
+
+A **queue** is a waiting line: new items join at the back, and items leave from the front.
+
+## Idea
+
+Picture the line at a ticket counter. People join at the back of the line, and the person at the front is served first. Nobody cuts in, and nobody leaves from the middle. The first person to arrive is the first person to be served.
+
+Computer scientists call this **first in, first out**, or **FIFO**. It is the opposite of a [stack](./stack.mdx): a stack serves the newest item first, a queue serves the oldest item first.
+
+A queue only needs a few operations:
+
+- **enqueue**: join the line at the back.
+- **dequeue**: leave the line from the front. The item is handed to you.
+- **peek** (also called **front**): look at the item at the front without removing it.
+- **is empty**: check whether anyone is waiting.
+
+<ArrayDiagram name="queue" items={[10, 20, 30]} hideIndex marks={{0: 'front', 2: 'back'}} />
+
+Here `10` arrived first, so it will be served first.
+
+Like a stack, a queue is a **rule** about how you use a collection, not a particular layout in memory.
+
+## How it works
+
+### Enqueue and dequeue
+
+Here is a queue changing over time. The left end is the front of the line and the right end is the back:
+
+```text
+start:          (empty)
+enqueue 10:     10
+enqueue 20:     10 20
+enqueue 30:     10 20 30
+dequeue -> 10:  20 30
+dequeue -> 20:  30
+```
+
+### Building one
+
+- **With a linked list.** Keep a pointer to the first node (the front) and one to the last node (the back). Enqueue adds a node at the back and dequeue removes the node at the front. Both are instant, as you saw on the [Linked List](./linked-list.mdx) page. This is why the tail pointer matters.
+- **With an array.** There is a trap here. If the front of the queue is always index 0, every dequeue makes everyone shift one seat to the left, and you know from the [Array](./array.mdx) page that this is slow.
+
+The fix is a **circular queue** (also called a ring buffer). Nobody shifts. Instead, you remember where the front is, and when you run past the last seat of the array, you wrap around to seat 0, as if the seats were arranged in a circle. Watch a queue with room for 4 items:
+
+<ArrayDiagram name="enqueue 10, 20, 30" labelWidth="11rem" items={[10, 20, 30, null]} marks={{0: 'front', 2: 'back'}} />
+
+<ArrayDiagram name="dequeue twice" labelWidth="11rem" items={[null, null, 30, null]} hideIndex marks={{2: 'front/back'}} />
+
+<ArrayDiagram name="enqueue 40, 50, 60" labelWidth="11rem" items={[50, 60, 30, 40]} hideIndex marks={{1: 'back', 2: 'front'}} />
+
+After the two dequeues, the front moved from seat 0 to seat 2, and nothing was shifted. Then `40` took seat 3, `50` wrapped around to seat 0, and `60` took seat 1. The line, from front to back, is `30 40 50 60`. The "wrap around" is done with the remainder operator: the seat after seat 3 is `(3 + 1) % 4`, which is 0.
+
+### Related queues
+
+- A **deque** (say "deck", short for double-ended queue) lets you add and remove at **both** ends. It is a generalization of both stacks and queues.
+- A **priority queue** serves the most important item first instead of the oldest. It is usually built with a [heap](./heap.mdx).
+
+### When the queue is empty
+
+Dequeuing or peeking an empty queue is a mistake, just like popping an empty stack. Check whether the queue is empty first. Some languages give you a choice: Java has `remove()`, which throws an error on an empty queue, and `poll()`, which returns `null` instead.
+
+## Code
+
+Most languages already have a queue. In C++ it is `std::queue`, in Python it is `collections.deque`, and in Java it is `ArrayDeque` used through the `Queue` interface. C has none.
+
+### Enqueue, dequeue and peek
+
+<Tabs groupId="language">
+  <TabItem value="c" label="C" default>
+
+The C standard library has no queue. Build one, as in the circular queue below.
+
+  </TabItem>
+  <TabItem value="cpp" label="C++">
+
+```cpp title="basics.cpp"
+#include <iostream>
+#include <queue>
+
+int main() {
+    std::queue<int> queue;  // an empty queue
+    queue.push(10);         // enqueue
+    queue.push(20);
+    queue.push(30);  // the back is now 30
+
+    std::cout << "peek " << queue.front() << "\n";  // peek 10
+
+    std::cout << "dequeue " << queue.front() << "\n";  // dequeue 10
+    queue.pop();  // pop() removes the front but does not return it
+
+    std::cout << "dequeue " << queue.front() << "\n";  // dequeue 20
+    queue.pop();
+
+    std::cout << "size " << queue.size() << "\n";  // size 1
+}
+```
+
+  </TabItem>
+  <TabItem value="python" label="Python">
+
+```python title="basics.py"
+from collections import deque
+
+queue = deque()   # an empty queue
+queue.append(10)  # enqueue
+queue.append(20)
+queue.append(30)  # the back is now 30
+
+print("peek", queue[0])                # peek 10
+print("dequeue", queue.popleft())      # dequeue 10
+print("dequeue", queue.popleft())      # dequeue 20
+print("size", len(queue))              # size 1
+```
+
+  </TabItem>
+  <TabItem value="java" label="Java">
+
+```java title="Basics.java"
+import java.util.ArrayDeque;
+import java.util.Queue;
+
+public class Basics {
+    public static void main(String[] args) {
+        Queue<Integer> queue = new ArrayDeque<>();  // an empty queue
+        queue.offer(10);  // enqueue
+        queue.offer(20);
+        queue.offer(30);  // the back is now 30
+
+        System.out.println("peek " + queue.peek());     // peek 10
+        System.out.println("dequeue " + queue.poll());  // dequeue 10
+        System.out.println("dequeue " + queue.poll());  // dequeue 20
+        System.out.println("size " + queue.size());     // size 1
+    }
+}
+```
+
+  </TabItem>
+</Tabs>
+
+### Build a circular queue
+
+This is the queue from the pictures above: room for 4 items, with the front moving and wrapping around. It keeps a `size` as well as the `front`, because with only a front and a back index you could not tell a full queue from an empty one. To keep the code short, it does not check for an empty or full queue. Real code should.
+
+<Tabs groupId="language">
+  <TabItem value="c" label="C" default>
+
+```c title="circular.c"
+#include <stdio.h>
+
+#define CAPACITY 4
+
+typedef struct {
+    int items[CAPACITY];
+    int front;  // index of the first item
+    int size;   // how many items are in the queue
+} Queue;
+
+void enqueue(Queue *q, int value) {
+    int back = (q->front + q->size) % CAPACITY;  // the next free seat
+    q->items[back] = value;
+    q->size++;
+}
+
+int dequeue(Queue *q) {
+    int value = q->items[q->front];
+    q->front = (q->front + 1) % CAPACITY;  // wrap around at the end
+    q->size--;
+    return value;
+}
+
+int main(void) {
+    Queue q = {.front = 0, .size = 0};
+    enqueue(&q, 10);
+    enqueue(&q, 20);
+    enqueue(&q, 30);
+    dequeue(&q);      // 10 leaves
+    dequeue(&q);      // 20 leaves, the front is now at index 2
+    enqueue(&q, 40);  // takes index 3
+    enqueue(&q, 50);  // wraps around to index 0
+    enqueue(&q, 60);  // takes index 1
+
+    while (q.size > 0) {
+        printf("%d ", dequeue(&q));  // 30 40 50 60
+    }
+    printf("\n");
+    return 0;
+}
+```
+
+  </TabItem>
+  <TabItem value="cpp" label="C++">
+
+```cpp title="circular.cpp"
+#include <iostream>
+
+const int CAPACITY = 4;
+
+struct Queue {
+    int items[CAPACITY];
+    int front = 0;  // index of the first item
+    int size = 0;   // how many items are in the queue
+};
+
+void enqueue(Queue &q, int value) {
+    int back = (q.front + q.size) % CAPACITY;  // the next free seat
+    q.items[back] = value;
+    q.size++;
+}
+
+int dequeue(Queue &q) {
+    int value = q.items[q.front];
+    q.front = (q.front + 1) % CAPACITY;  // wrap around at the end
+    q.size--;
+    return value;
+}
+
+int main() {
+    Queue q;
+    enqueue(q, 10);
+    enqueue(q, 20);
+    enqueue(q, 30);
+    dequeue(q);       // 10 leaves
+    dequeue(q);       // 20 leaves, the front is now at index 2
+    enqueue(q, 40);   // takes index 3
+    enqueue(q, 50);   // wraps around to index 0
+    enqueue(q, 60);   // takes index 1
+
+    while (q.size > 0) {
+        std::cout << dequeue(q) << " ";  // 30 40 50 60
+    }
+    std::cout << "\n";
+}
+```
+
+  </TabItem>
+  <TabItem value="python" label="Python">
+
+```python title="circular.py"
+class CircularQueue:
+    def __init__(self, capacity):
+        self.items = [None] * capacity
+        self.front = 0  # index of the first item
+        self.size = 0   # how many items are in the queue
+
+    def enqueue(self, value):
+        # the next free seat
+        back = (self.front + self.size) % len(self.items)
+        self.items[back] = value
+        self.size += 1
+
+    def dequeue(self):
+        value = self.items[self.front]
+        # wrap around at the end
+        self.front = (self.front + 1) % len(self.items)
+        self.size -= 1
+        return value
+
+
+q = CircularQueue(4)
+q.enqueue(10)
+q.enqueue(20)
+q.enqueue(30)
+q.dequeue()      # 10 leaves
+q.dequeue()      # 20 leaves, the front is now at index 2
+q.enqueue(40)    # takes index 3
+q.enqueue(50)    # wraps around to index 0
+q.enqueue(60)    # takes index 1
+
+while q.size > 0:
+    print(q.dequeue(), end=" ")  # 30 40 50 60
+print()
+```
+
+  </TabItem>
+  <TabItem value="java" label="Java">
+
+```java title="Circular.java"
+public class Circular {
+    static final int CAPACITY = 4;
+
+    static class Queue {
+        int[] items = new int[CAPACITY];
+        int front = 0;  // index of the first item
+        int size = 0;   // how many items are in the queue
+
+        void enqueue(int value) {
+            int back = (front + size) % CAPACITY;  // next free seat
+            items[back] = value;
+            size++;
+        }
+
+        int dequeue() {
+            int value = items[front];
+            front = (front + 1) % CAPACITY;  // wrap around at the end
+            size--;
+            return value;
+        }
+    }
+
+    public static void main(String[] args) {
+        Queue q = new Queue();
+        q.enqueue(10);
+        q.enqueue(20);
+        q.enqueue(30);
+        q.dequeue();      // 10 leaves
+        q.dequeue();      // 20 leaves, the front is now at index 2
+        q.enqueue(40);    // takes index 3
+        q.enqueue(50);    // wraps around to index 0
+        q.enqueue(60);    // takes index 1
+
+        while (q.size > 0) {
+            System.out.print(q.dequeue() + " ");  // 30 40 50 60
+        }
+        System.out.println();
+    }
+}
+```
+
+  </TabItem>
+</Tabs>
+
+## Complexity
+
+If O(1) and O(n) are new to you, see the [Array](./array.mdx) page.
+
+| Operation                   | Cost   | In plain words                                                              |
+| --------------------------- | ------ | --------------------------------------------------------------------------- |
+| Enqueue                     | $O(1)$ | Join at the back. Nobody else moves.                                        |
+| Dequeue                     | $O(1)$ | Leave from the front. Nobody else moves. (Only if built the right way, see below.) |
+| Peek                        | $O(1)$ | Look at the front.                                                          |
+| Is empty                    | $O(1)$ | Check one number.                                                           |
+| Find a value in the middle  | $O(n)$ | You would have to dequeue items one by one.                                 |
+| Memory used                 | $O(n)$ | One slot per item.                                                          |
+
+The $O(1)$ for dequeue holds for a linked list with a tail pointer, for a circular array, and for the ready-made queues. A plain array that shifts everyone on every dequeue takes $O(n)$ instead.
+
+## When to use it
+
+A queue is a good fit when things should be handled in the **order they arrived**:
+
+- **Waiting lines.** Print jobs waiting for the printer, requests waiting for a server, tasks waiting for their turn.
+- **Buffers.** Data arrives faster than you can process it, so it waits in line.
+- **Breadth-first search.** Exploring a [graph](./graph.mdx) or a [tree](./tree.mdx) level by level uses a queue.
+
+Look at another structure when:
+
+- You need the **newest** item first. That is a [stack](./stack.mdx).
+- You need the **most important** item first. That is a priority queue, usually built with a [heap](./heap.mdx).
+- You need to reach any item by its position. An [array](./array.mdx) does that.
+
+:::warning[Common mistakes]
+- **Using a Python `list` as a queue.** `list.pop(0)` makes every other item shift, so it is slow. Use `collections.deque` and `popleft()`. The Python tutorial gives the same advice.
+- **Dequeuing or peeking an empty queue.** Check first. In C++, `front()` and `pop()` on an empty queue are undefined behavior.
+- **Expecting C++ `pop()` to return the value.** It returns nothing. Read `front()` first, then call `pop()`.
+- **Mixing up the ends.** Items join at the back and leave from the front.
+- **Confusing a full circular queue with an empty one.** Keeping a `size`, as above, avoids the problem.
+:::
+
+## Sources
+
+The facts on this page were checked against:
+
+- [Queue (abstract data type), Wikipedia](https://en.wikipedia.org/wiki/Queue_%28abstract_data_type%29)
+- [std::queue, cppreference](https://en.cppreference.com/w/cpp/container/queue)
+- [collections.deque, The Python Standard Library](https://docs.python.org/3/library/collections.html#collections.deque)
+- [Using lists as queues, The Python Tutorial](https://docs.python.org/3/tutorial/datastructures.html#using-lists-as-queues)
+- [Queue, Java SE 21 API](https://docs.oracle.com/en/java/javase/21/docs/api/java.base/java/util/Queue.html)
+- [ArrayDeque, Java SE 21 API](https://docs.oracle.com/en/java/javase/21/docs/api/java.base/java/util/ArrayDeque.html)
