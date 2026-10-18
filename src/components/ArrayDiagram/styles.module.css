@@ -1,0 +1,48 @@
+.figure {
+  margin: 0 0 var(--ifm-leading);
+  overflow-x: auto;
+  padding: 0.5rem 0;
+}
+
+.grid {
+  display: inline-grid;
+  align-items: center;
+  column-gap: 0;
+  row-gap: 0.25rem;
+}
+
+.label {
+  padding-right: 0.75rem;
+  color: var(--ifm-color-emphasis-700);
+  font-family: var(--ifm-font-family-monospace);
+  font-size: 0.9rem;
+  white-space: nowrap;
+}
+
+.box {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 3rem;
+  margin-left: -2px; /* neighbouring boxes share one border */
+  border: 2px solid var(--ifm-color-primary);
+  background: var(--ifm-background-surface-color);
+  font-family: var(--ifm-font-family-monospace);
+  font-weight: var(--ifm-font-weight-bold);
+}
+
+.empty {
+  border-style: dashed;
+  color: var(--ifm-color-emphasis-500);
+}
+
+.highlight {
+  background: color-mix(in srgb, var(--ifm-color-primary) 22%, transparent);
+}
+
+.index {
+  text-align: center;
+  color: var(--ifm-color-emphasis-600);
+  font-family: var(--ifm-font-family-monospace);
+  font-size: 0.85rem;
+}

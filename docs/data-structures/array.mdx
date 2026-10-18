@@ -1,162 +1,181 @@
 ---
 title: Array
-description: A block of contiguous memory where every element is reached by its index in O(1).
+description: A row of boxes sitting side by side, each with a number, so you can jump straight to any item.
 sidebar_position: 1
 ---
 
 import Tabs from '@theme/Tabs';
 import TabItem from '@theme/TabItem';
+import ArrayDiagram from '@site/src/components/ArrayDiagram';
 
 # Array
 
+An **array** is the simplest way to keep a collection of things in order: a row of boxes, side by side, each with a number on it.
+
 ## Idea
 
-An **array** stores a fixed number of elements of the same type **next to each other in memory**. Every element has an **index**, starting from 0, and the index is all you need to jump straight to the element.
+Picture a row of numbered seats in a cinema. Every seat holds one person, the seats are right next to each other, and each seat has a number. If your ticket says seat 3, you walk straight to seat 3. You do not check seats 0, 1 and 2 first.
 
-The jump is instant because of the layout. If the array starts at memory address `base` and every element takes `s` bytes, element `i` lives at:
+An array works the same way:
+
+- The **seats** are the array's **items**. They sit side by side in the computer's memory.
+- The **seat numbers** are called **indexes**. Counting starts at **0**, not 1, so an array with 5 items has indexes 0 to 4. This surprises everyone at first, and you get used to it quickly.
+- You can go **straight to any item** using its index. No searching needed.
+
+<ArrayDiagram name="scores" items={[10, 20, 30, 40, 50]} />
+
+In code, `scores[3]` means "the item at index 3", which is `40` here.
+
+<details>
+<summary>Optional: how the computer finds a seat so fast</summary>
+
+Because the seats are side by side, the computer only needs simple arithmetic. If the row starts at memory address `base` and each item takes `s` bytes (an `int` usually takes 4), the item at index `i` lives at:
 
 $$
 \text{address}(i) = \text{base} + i \times s
 $$
 
-That is one multiplication and one addition, however large the array is. This is why reading `arr[i]` costs $O(1)$.
+For example, if `base` is 1000 and `s` is 4, index 3 is at $1000 + 3 \times 4 = 1012$. One multiplication and one addition, however big the array is.
+
+</details>
 
 ## How it works
 
-This is the memory layout of `[10, 20, 30, 40, 50]` with 4-byte integers, starting at address 1000:
+### Reading and changing: instant
 
-| Index   | 0    | 1    | 2    | 3    | 4    |
-| ------- | ---- | ---- | ---- | ---- | ---- |
-| Value   | 10   | 20   | 30   | 40   | 50   |
-| Address | 1000 | 1004 | 1008 | 1012 | 1016 |
+Reading or changing `scores[3]` takes the same tiny effort whether the array has 5 items or 5 million. The computer jumps to the seat and does not look at the others.
 
-The same layout explains why some operations are slow: elements cannot leave gaps, so changing the middle of an array means moving other elements.
+### Inserting: everyone shifts
 
-### Insert and delete
+Say a new item, `25`, wants seat 2, but seat 2 is already taken. Seats cannot be squeezed apart, so everyone from seat 2 onward slides one seat to the right to make room. For that to work, the row needs one empty seat at the end.
 
-To insert 25 at index 2, every element from index 2 onward moves one slot to the right. Start from the **last** element, otherwise you overwrite data you still need:
+The order matters: move the **last** item first. If you started at the front, you would overwrite the next item before you had copied it.
 
 ```text
-start  : [10, 20, 30, 40, 50,  _ ]
-shift  : [10, 20,  _, 30, 40, 50]
-insert : [10, 20, 25, 30, 40, 50]
+position:             0     1     2     3     4     5
+start:               10    20    30    40    50     _
+move 50 right:       10    20    30    40    50    50
+move 40 right:       10    20    30    40    40    50
+move 30 right:       10    20    30    30    40    50
+put 25 in:           10    20    25    30    40    50
 ```
 
-Deleting is the mirror image: the elements after the removed one move one slot to the left. In both cases up to $n$ elements move, so the cost is $O(n)$. Inserting or deleting at the **end** moves nothing, so it costs $O(1)$.
+With 5 items that is quick. With a million items, up to a million of them have to move. So inserting near the **front** is slow, while inserting at the **end** is fast, because nobody has to move.
 
-### Fixed-size and dynamic arrays
+### Deleting: close the gap
 
-A basic array (`int arr[5]` in C and C++, `int[]` in Java) has its size fixed when it is created. Most languages also offer a **dynamic array**: Python `list`, C++ `std::vector`, Java `ArrayList`. When it runs out of room, it allocates a bigger block (usually twice the size), copies every element into it, and carries on.
+An array cannot keep an empty seat in the middle. When an item leaves, everyone after it slides one seat to the left.
 
-Copying is expensive, but it is rare. If you append $n$ elements to an empty dynamic array, copies happen when the size reaches 1, 2, 4, 8, ... and the total number of copied elements is:
+```text
+position:             0     1     2     3     4
+start:               10    20    30    40    50
+move 30 left:        10    30    30    40    50
+move 40 left:        10    30    40    40    50
+move 50 left:        10    30    40    50    50
+shrink by one:       10    30    40    50
+```
+
+It is the same story as inserting: deleting near the front means many moves, deleting at the end means none.
+
+### Searching: look one by one
+
+If you know the index, reading is instant. But if you only know the **value**, for example "where is 40?", the computer has no shortcut. It checks seat 0, then seat 1, then seat 2, and so on until it finds 40. For a big array that can take a while. (If the items are sorted, there is a much faster trick called binary search. It gets its own page later.)
+
+### When the row is full: growable arrays
+
+A basic array has a fixed number of seats, decided when you create it. What if you need more?
+
+Most languages offer a **growable array** (also called a dynamic array): `list` in Python, `std::vector` in C++, `ArrayList` in Java. When the row is full, it builds a new row twice as long, moves everyone over, and throws the old row away. C has no ready-made one, so you do it yourself with `malloc` and `realloc`, as the code below shows.
+
+Moving everyone is slow, but it happens rarely. After the row doubles, there is plenty of free room, so you can add many items before the next move. So **on average**, adding to the end is still fast.
+
+<details>
+<summary>Optional: why "on average" is fast</summary>
+
+Add $n$ items one by one to an empty growable array that doubles when full. Moves happen when the size reaches 1, 2, 4, 8, ... and the total number of items moved is:
 
 $$
 1 + 2 + 4 + \dots + 2^k = 2^{k+1} - 1 < 2n \qquad (2^k < n)
 $$
 
-Spread over $n$ appends, that is less than 2 copies per append, so appending costs $O(1)$ on average. This is called **amortized** $O(1)$.
+That is fewer than 2 moves per added item, so the extra cost per item is a small constant. This is called **amortized** $O(1)$.
+
+</details>
 
 ## Code
 
-### Insert and delete by shifting
+Pick your language in the tabs. Your choice is remembered on every page.
 
-Here the array has a fixed capacity and a separate `size` that says how many slots are in use.
+### The basics: create, read, change, loop
 
 <Tabs groupId="language">
-  <TabItem value="python" label="Python" default>
+  <TabItem value="c" label="C" default>
 
-```python title="array_ops.py"
-def insert(arr, size, index, value):
-    """Insert value at index. Returns the new size."""
-    if size == len(arr):
-        raise OverflowError("array is full")
-    if not 0 <= index <= size:
-        raise IndexError("index out of range")
-    for i in range(size, index, -1):  # shift right, starting from the end
-        arr[i] = arr[i - 1]
-    arr[index] = value
-    return size + 1
+```c title="basics.c"
+#include <stdio.h>
 
+int main(void) {
+    int scores[5] = {10, 20, 30, 40, 50};  // an array of 5 integers
 
-def remove(arr, size, index):
-    """Remove the item at index. Returns the new size."""
-    if not 0 <= index < size:
-        raise IndexError("index out of range")
-    for i in range(index, size - 1):  # shift left
-        arr[i] = arr[i + 1]
-    return size - 1
+    printf("%d\n", scores[2]);  // read index 2 -> prints 30
+    scores[2] = 99;             // change index 2
 
-
-arr = [10, 20, 30, 40, 50, None]  # capacity 6, 5 slots in use
-size = 5
-size = insert(arr, size, 2, 25)   # arr[:size] == [10, 20, 25, 30, 40, 50]
-size = remove(arr, size, 0)       # arr[:size] == [20, 25, 30, 40, 50]
+    for (int i = 0; i < 5; i++) {  // visit every item (0 to 4)
+        printf("%d ", scores[i]);  // prints: 10 20 99 40 50
+    }
+    printf("\n");
+    return 0;
+}
 ```
 
   </TabItem>
   <TabItem value="cpp" label="C++">
 
-```cpp title="array_ops.cpp"
-#include <stdexcept>
-
-// Inserts value at index. Returns the new size.
-int insertAt(int arr[], int size, int capacity, int index, int value) {
-    if (size == capacity) throw std::overflow_error("array is full");
-    if (index < 0 || index > size) throw std::out_of_range("index out of range");
-    for (int i = size; i > index; --i) {
-        arr[i] = arr[i - 1];  // shift right, starting from the end
-    }
-    arr[index] = value;
-    return size + 1;
-}
-
-// Removes the item at index. Returns the new size.
-int removeAt(int arr[], int size, int index) {
-    if (index < 0 || index >= size) throw std::out_of_range("index out of range");
-    for (int i = index; i < size - 1; ++i) {
-        arr[i] = arr[i + 1];  // shift left
-    }
-    return size - 1;
-}
+```cpp title="basics.cpp"
+#include <iostream>
 
 int main() {
-    int arr[6] = {10, 20, 30, 40, 50};  // capacity 6, 5 slots in use
-    int size = 5;
-    size = insertAt(arr, size, 6, 2, 25);  // 10 20 25 30 40 50
-    size = removeAt(arr, size, 0);         // 20 25 30 40 50
+    int scores[5] = {10, 20, 30, 40, 50};  // an array of 5 integers
+
+    std::cout << scores[2] << "\n";  // read index 2 -> prints 30
+    scores[2] = 99;                  // change index 2
+
+    for (int score : scores) {       // visit every item, in order
+        std::cout << score << " ";   // prints: 10 20 99 40 50
+    }
+    std::cout << "\n";
 }
+```
+
+  </TabItem>
+  <TabItem value="python" label="Python">
+
+```python title="basics.py"
+scores = [10, 20, 30, 40, 50]  # a list of 5 integers
+
+print(scores[2])  # read index 2 -> prints 30
+scores[2] = 99    # change index 2
+
+for score in scores:       # visit every item, in order
+    print(score, end=" ")  # prints: 10 20 99 40 50
+print()
 ```
 
   </TabItem>
   <TabItem value="java" label="Java">
 
-```java title="ArrayOps.java"
-public class ArrayOps {
-    // Inserts value at index. Returns the new size.
-    static int insert(int[] arr, int size, int index, int value) {
-        if (size == arr.length) throw new IllegalStateException("array is full");
-        if (index < 0 || index > size) throw new IndexOutOfBoundsException("index out of range");
-        for (int i = size; i > index; i--) {
-            arr[i] = arr[i - 1];  // shift right, starting from the end
-        }
-        arr[index] = value;
-        return size + 1;
-    }
-
-    // Removes the item at index. Returns the new size.
-    static int remove(int[] arr, int size, int index) {
-        if (index < 0 || index >= size) throw new IndexOutOfBoundsException("index out of range");
-        for (int i = index; i < size - 1; i++) {
-            arr[i] = arr[i + 1];  // shift left
-        }
-        return size - 1;
-    }
-
+```java title="Basics.java"
+public class Basics {
     public static void main(String[] args) {
-        int[] arr = {10, 20, 30, 40, 50, 0};  // capacity 6, 5 slots in use
-        int size = 5;
-        size = insert(arr, size, 2, 25);  // 10 20 25 30 40 50
-        size = remove(arr, size, 0);      // 20 25 30 40 50
+        int[] scores = {10, 20, 30, 40, 50};  // an array of 5 integers
+
+        System.out.println(scores[2]);  // read index 2 -> prints 30
+        scores[2] = 99;                 // change index 2
+
+        for (int score : scores) {  // visit every item
+            System.out.print(score + " ");  // 10 20 99 40 50
+        }
+        System.out.println();
     }
 }
 ```
@@ -164,49 +183,234 @@ public class ArrayOps {
   </TabItem>
 </Tabs>
 
-### Dynamic arrays in the standard library
+### Insert and delete by shifting
 
-In practice you use the built-in dynamic array and let it manage the capacity.
+Here the array has room for 6 items but only 5 are in use, and `size` keeps track of that. To keep the code short, these functions assume the index is valid and there is room for one more item. Real code should check both.
 
 <Tabs groupId="language">
-  <TabItem value="python" label="Python" default>
+  <TabItem value="c" label="C" default>
 
-```python
-nums = [10, 20, 30]
-nums.append(40)     # O(1) amortized
-nums.insert(1, 15)  # O(n): shifts the tail
-nums.pop()          # O(1): removes the last element
-nums.pop(0)         # O(n): shifts everything left
-x = nums[2]         # O(1)
+```c title="insert_remove.c"
+#include <stdio.h>
+
+// Put value at index pos. Returns the new size.
+int insert_at(int arr[], int size, int pos, int value) {
+    for (int i = size; i > pos; i--) {
+        arr[i] = arr[i - 1];  // shift right, last item first
+    }
+    arr[pos] = value;
+    return size + 1;
+}
+
+// Remove the item at index pos. Returns the new size.
+int remove_at(int arr[], int size, int pos) {
+    for (int i = pos; i < size - 1; i++) {
+        arr[i] = arr[i + 1];  // shift left, first item first
+    }
+    return size - 1;
+}
+
+int main(void) {
+    int arr[6] = {10, 20, 30, 40, 50};  // room for 6, 5 in use
+    int size = 5;
+
+    size = insert_at(arr, size, 2, 25);  // 10 20 25 30 40 50
+    size = remove_at(arr, size, 0);      // 20 25 30 40 50
+
+    for (int i = 0; i < size; i++) printf("%d ", arr[i]);
+    printf("\n");
+    return 0;
+}
 ```
 
   </TabItem>
   <TabItem value="cpp" label="C++">
 
-```cpp
-#include <vector>
+```cpp title="insert_remove.cpp"
+#include <iostream>
 
-std::vector<int> nums = {10, 20, 30};
-nums.push_back(40);                 // O(1) amortized
-nums.insert(nums.begin() + 1, 15);  // O(n): shifts the tail
-nums.pop_back();                    // O(1): removes the last element
-nums.erase(nums.begin());           // O(n): shifts everything left
-int x = nums[2];                    // O(1)
+// Put value at index pos. Returns the new size.
+int insert_at(int arr[], int size, int pos, int value) {
+    for (int i = size; i > pos; i--) {
+        arr[i] = arr[i - 1];  // shift right, last item first
+    }
+    arr[pos] = value;
+    return size + 1;
+}
+
+// Remove the item at index pos. Returns the new size.
+int remove_at(int arr[], int size, int pos) {
+    for (int i = pos; i < size - 1; i++) {
+        arr[i] = arr[i + 1];  // shift left, first item first
+    }
+    return size - 1;
+}
+
+int main() {
+    int arr[6] = {10, 20, 30, 40, 50};  // room for 6, 5 in use
+    int size = 5;
+
+    size = insert_at(arr, size, 2, 25);  // 10 20 25 30 40 50
+    size = remove_at(arr, size, 0);      // 20 25 30 40 50
+
+    for (int i = 0; i < size; i++) std::cout << arr[i] << " ";
+    std::cout << "\n";
+}
+```
+
+  </TabItem>
+  <TabItem value="python" label="Python">
+
+```python title="insert_remove.py"
+def insert_at(arr, size, pos, value):
+    """Put value at index pos. Returns the new size."""
+    for i in range(size, pos, -1):
+        arr[i] = arr[i - 1]  # shift right, last item first
+    arr[pos] = value
+    return size + 1
+
+
+def remove_at(arr, size, pos):
+    """Remove the item at index pos. Returns the new size."""
+    for i in range(pos, size - 1):
+        arr[i] = arr[i + 1]  # shift left, first item first
+    return size - 1
+
+
+arr = [10, 20, 30, 40, 50, None]  # room for 6, 5 in use
+size = 5
+
+size = insert_at(arr, size, 2, 25)  # 10 20 25 30 40 50
+size = remove_at(arr, size, 0)      # 20 25 30 40 50
+
+print(arr[:size])
 ```
 
   </TabItem>
   <TabItem value="java" label="Java">
 
-```java
+```java title="InsertRemove.java"
+public class InsertRemove {
+    // Put value at index pos. Returns the new size.
+    static int insertAt(int[] arr, int size, int pos, int value) {
+        for (int i = size; i > pos; i--) {
+            arr[i] = arr[i - 1];  // shift right, last item first
+        }
+        arr[pos] = value;
+        return size + 1;
+    }
+
+    // Remove the item at index pos. Returns the new size.
+    static int removeAt(int[] arr, int size, int pos) {
+        for (int i = pos; i < size - 1; i++) {
+            arr[i] = arr[i + 1];  // shift left, first item first
+        }
+        return size - 1;
+    }
+
+    public static void main(String[] args) {
+        int[] arr = {10, 20, 30, 40, 50, 0};  // room for 6, 5 in use
+        int size = 5;
+
+        size = insertAt(arr, size, 2, 25);  // 10 20 25 30 40 50
+        size = removeAt(arr, size, 0);      // 20 25 30 40 50
+
+        for (int i = 0; i < size; i++) System.out.print(arr[i] + " ");
+        System.out.println();
+    }
+}
+```
+
+  </TabItem>
+</Tabs>
+
+### A growable array
+
+In C you manage the growing yourself: ask for memory with `malloc`, get a bigger block with `realloc` when the row is full, and give the memory back with `free`. (To keep it short, the code does not check whether `malloc` and `realloc` succeeded. Real code should.) The other languages do all of this for you. In the code below, the operations marked "slow" are the ones that make the other items shift, as you saw above.
+
+<Tabs groupId="language">
+  <TabItem value="c" label="C" default>
+
+```c title="growing.c"
+#include <stdio.h>
+#include <stdlib.h>
+
+int main(void) {
+    int capacity = 2;  // seats in the row
+    int size = 0;      // seats taken
+    int *nums = malloc(capacity * sizeof(int));  // ask for 2 seats
+
+    for (int i = 1; i <= 5; i++) {
+        if (size == capacity) {  // the row is full
+            // get a row twice as long and move everyone over
+            capacity *= 2;
+            nums = realloc(nums, capacity * sizeof(int));
+        }
+        nums[size] = i * 10;  // add the new item at the end
+        size++;
+    }
+
+    // print every item: 10 20 30 40 50
+    for (int i = 0; i < size; i++) printf("%d ", nums[i]);
+    printf("\n");
+
+    free(nums);  // give the memory back when you are done
+    return 0;
+}
+```
+
+  </TabItem>
+  <TabItem value="cpp" label="C++">
+
+```cpp title="growing.cpp"
+#include <iostream>
+#include <vector>
+
+int main() {
+    std::vector<int> nums = {10, 20, 30};
+
+    nums.push_back(40);                 // add at the end: fast
+    nums.insert(nums.begin() + 1, 15);  // insert at index 1: slow
+    nums.pop_back();                    // remove the last: fast
+    nums.erase(nums.begin());           // remove the first: slow
+
+    std::cout << nums[2] << "\n";       // read by index: fast
+}
+```
+
+  </TabItem>
+  <TabItem value="python" label="Python">
+
+```python title="growing.py"
+nums = [10, 20, 30]
+
+nums.append(40)     # add at the end: fast
+nums.insert(1, 15)  # insert at index 1: slow
+nums.pop()          # remove the last: fast
+nums.pop(0)         # remove the first: slow
+
+print(nums[2])      # read by index: fast
+```
+
+  </TabItem>
+  <TabItem value="java" label="Java">
+
+```java title="Growing.java"
 import java.util.ArrayList;
 import java.util.List;
 
-List<Integer> nums = new ArrayList<>(List.of(10, 20, 30));
-nums.add(40);                    // O(1) amortized
-nums.add(1, 15);                 // O(n): shifts the tail
-nums.remove(nums.size() - 1);    // O(1): removes the last element
-nums.remove(0);                  // O(n): shifts everything left
-int x = nums.get(2);             // O(1)
+public class Growing {
+    public static void main(String[] args) {
+        List<Integer> nums = new ArrayList<>(List.of(10, 20, 30));
+
+        nums.add(40);                  // add at the end: fast
+        nums.add(1, 15);               // insert at index 1: slow
+        nums.remove(nums.size() - 1);  // remove the last: fast
+        nums.remove(0);                // remove the first: slow
+
+        System.out.println(nums.get(2));  // read by index: fast
+    }
+}
 ```
 
   </TabItem>
@@ -214,30 +418,36 @@ int x = nums.get(2);             // O(1)
 
 ## Complexity
 
-| Operation                              | Time        | Notes                                              |
-| -------------------------------------- | ----------- | -------------------------------------------------- |
-| Access or update by index              | $O(1)$      | Computed from the address formula                  |
-| Search in an unsorted array            | $O(n)$      | Linear scan                                        |
-| Search in a sorted array               | $O(\log n)$ | Binary search                                      |
-| Insert or delete at the end            | $O(1)$      | Amortized for dynamic arrays                       |
-| Insert or delete at the start or middle | $O(n)$     | Elements must be shifted                           |
-| Space                                  | $O(n)$      | Dynamic arrays may keep some unused spare capacity |
+Complexity answers one question: **if the array gets bigger, how much slower does this operation get?** Two terms are enough for now:
+
+- **O(1)**: instant. The same effort whether the array has 10 items or 10 million.
+- **O(n)**: the effort grows in step with the number of items, called **n**. Twice as many items means roughly twice the work.
+
+| Operation                              | Cost        | In plain words                                                       |
+| -------------------------------------- | ----------- | -------------------------------------------------------------------- |
+| Read or change the item at an index    | $O(1)$      | Jump straight to the seat.                                           |
+| Add or remove at the end               | $O(1)$      | Nobody has to move. A growable array is slow only when it must grow. |
+| Insert or remove at the front or middle | $O(n)$     | Everyone after that seat has to slide over.                          |
+| Find a value in an unsorted array      | $O(n)$      | Check the seats one by one. In the worst case, all of them.          |
+| Find a value in a sorted array         | $O(\log n)$ | Binary search. Doubling the items adds only one more step.           |
+| Memory used                            | $O(n)$      | One seat per item.                                                   |
 
 ## When to use it
 
-Use an array when:
+An array is a great fit when:
 
-- You need fast access by index.
-- You mostly read, iterate, or append at the end.
-- Speed matters: elements sit together in memory, so iterating is fast on modern CPUs.
+- You read items by their position, like the days of the week, the pixels of an image, or the scores of a game.
+- You go through all the items in order.
+- You mostly add and remove at the end, like a shopping cart.
+- You want speed. Items sit side by side in memory, which computers handle very efficiently.
 
 Look at another structure when:
 
-- You insert or delete at the front or middle often. A linked list or a deque fits better.
-- You look elements up by value or by key. A hash table does that in $O(1)$ on average.
+- You often insert or remove at the front or middle. A linked list or a deque fits better.
+- You look items up by a name or key instead of a position. A hash table is much faster at that.
 
-:::warning[Common pitfalls]
-- **Off-by-one errors.** An array of $n$ elements has valid indexes $0$ to $n - 1$. Index $n$ is out of range.
-- **No bounds check in C and C++.** Reading `arr[n]` is undefined behavior, not an error. The program may crash, or silently read garbage.
-- **Slow inserts in loops.** Calling `insert(0, x)` or `pop(0)` inside a loop turns an $O(n)$ algorithm into $O(n^2)$.
+:::warning[Common mistakes]
+- **Off by one.** An array with 5 items has indexes 0 to 4. `scores[5]` does not exist.
+- **No safety net in C and C++.** Going past the end does not raise an error. The program reads or writes whatever happens to be next to the array. It may crash, or quietly give wrong answers.
+- **Slow loops.** Inserting or removing at the front inside a loop makes everyone shift every time, so a fast program becomes a slow one.
 :::

@@ -41,20 +41,19 @@ flowchart TD
 Ngôn ngữ đã chọn được ghi nhớ và đồng bộ trên mọi khối code của site.
 
 <Tabs groupId="language">
-  <TabItem value="python" label="Python" default>
+  <TabItem value="c" label="C" default>
 
-```python title="binary_search.py"
-def binary_search(arr, target):
-    low, high = 0, len(arr) - 1
-    while low <= high:
-        mid = (low + high) // 2
-        if arr[mid] == target:
-            return mid
-        if arr[mid] < target:
-            low = mid + 1
-        else:
-            high = mid - 1
-    return -1
+```c title="binary_search.c"
+int binary_search(const int arr[], int n, int target) {
+    int low = 0, high = n - 1;
+    while (low <= high) {
+        int mid = low + (high - low) / 2;
+        if (arr[mid] == target) return mid;
+        if (arr[mid] < target) low = mid + 1;
+        else high = mid - 1;
+    }
+    return -1;
+}
 ```
 
   </TabItem>
@@ -71,6 +70,23 @@ int binarySearch(const std::vector<int>& arr, int target) {
     }
     return -1;
 }
+```
+
+  </TabItem>
+  <TabItem value="python" label="Python">
+
+```python title="binary_search.py"
+def binary_search(arr, target):
+    low, high = 0, len(arr) - 1
+    while low <= high:
+        mid = (low + high) // 2
+        if arr[mid] == target:
+            return mid
+        if arr[mid] < target:
+            low = mid + 1
+        else:
+            high = mid - 1
+    return -1
 ```
 
   </TabItem>

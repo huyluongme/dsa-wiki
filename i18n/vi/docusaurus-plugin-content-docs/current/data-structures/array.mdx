@@ -1,162 +1,181 @@
 ---
 title: Mảng (Array)
-description: Một khối bộ nhớ liên tiếp, nơi mỗi phần tử được truy cập bằng chỉ số trong O(1).
+description: Một dãy ô nằm sát nhau, mỗi ô có một số thứ tự, nên bạn nhảy thẳng đến được phần tử nào cũng được.
 sidebar_position: 1
 ---
 
 import Tabs from '@theme/Tabs';
 import TabItem from '@theme/TabItem';
+import ArrayDiagram from '@site/src/components/ArrayDiagram';
 
 # Mảng (Array)
 
+**Mảng** là cách đơn giản nhất để giữ một tập hợp các thứ theo thứ tự: một dãy ô nằm sát nhau, mỗi ô được đánh một số.
+
 ## Ý tưởng
 
-**Mảng** lưu một số lượng cố định các phần tử cùng kiểu **nằm liên tiếp nhau trong bộ nhớ**. Mỗi phần tử có một **chỉ số** (index) bắt đầu từ 0, và chỉ cần chỉ số là bạn nhảy thẳng được đến phần tử đó.
+Hãy hình dung một hàng ghế đánh số trong rạp chiếu phim. Mỗi ghế có một người ngồi, các ghế nằm sát nhau, và mỗi ghế có một con số. Nếu vé của bạn ghi ghế số 3, bạn đi thẳng đến ghế số 3. Bạn không cần kiểm tra ghế 0, 1 và 2 trước.
 
-Việc nhảy tức thì này nhờ vào cách sắp xếp bộ nhớ. Nếu mảng bắt đầu ở địa chỉ `base` và mỗi phần tử chiếm `s` byte, phần tử thứ `i` nằm ở địa chỉ:
+Mảng hoạt động y như vậy:
+
+- **Các ghế** là các **phần tử** của mảng. Chúng nằm sát nhau trong bộ nhớ của máy tính.
+- **Số ghế** gọi là **chỉ số** (index). Việc đếm bắt đầu từ **0**, không phải 1, nên một mảng có 5 phần tử sẽ có chỉ số từ 0 đến 4. Ai mới học cũng thấy lạ lúc đầu, rồi sẽ quen rất nhanh.
+- Bạn có thể **đi thẳng đến bất kỳ phần tử nào** nhờ chỉ số của nó. Không cần tìm kiếm.
+
+<ArrayDiagram name="scores" indexLabel="chỉ số" items={[10, 20, 30, 40, 50]} />
+
+Trong code, `scores[3]` nghĩa là "phần tử ở chỉ số 3", ở đây là `40`.
+
+<details>
+<summary>Tùy chọn: máy tính tìm ra ghế nhanh như thế nào</summary>
+
+Vì các ghế nằm sát nhau, máy tính chỉ cần một phép tính đơn giản. Nếu dãy bắt đầu ở địa chỉ bộ nhớ `base` và mỗi phần tử chiếm `s` byte (một `int` thường chiếm 4), thì phần tử ở chỉ số `i` nằm ở:
 
 $$
 \text{address}(i) = \text{base} + i \times s
 $$
 
-Đó là một phép nhân và một phép cộng, dù mảng lớn đến đâu. Vì vậy đọc `arr[i]` tốn $O(1)$.
+Ví dụ, nếu `base` là 1000 và `s` là 4, chỉ số 3 nằm ở $1000 + 3 \times 4 = 1012$. Một phép nhân và một phép cộng, dù mảng lớn đến đâu.
+
+</details>
 
 ## Cách hoạt động
 
-Đây là cách mảng `[10, 20, 30, 40, 50]` nằm trong bộ nhớ, với số nguyên 4 byte bắt đầu ở địa chỉ 1000:
+### Đọc và sửa: tức thì
 
-| Chỉ số  | 0    | 1    | 2    | 3    | 4    |
-| ------- | ---- | ---- | ---- | ---- | ---- |
-| Giá trị | 10   | 20   | 30   | 40   | 50   |
-| Địa chỉ | 1000 | 1004 | 1008 | 1012 | 1016 |
+Đọc hoặc sửa `scores[3]` tốn một công sức nhỏ như nhau, dù mảng có 5 phần tử hay 5 triệu phần tử. Máy tính nhảy thẳng tới ghế đó và không hề nhìn các ghế khác.
 
-Chính cách sắp xếp này giải thích vì sao một số thao tác chậm: các phần tử không được để trống ô, nên thay đổi ở giữa mảng đồng nghĩa với việc phải dịch chuyển các phần tử khác.
+### Chèn: mọi người dịch chỗ
 
-### Chèn và xóa
+Giả sử một phần tử mới, `25`, muốn ngồi ghế số 2, nhưng ghế 2 đã có người. Các ghế không thể banh ra, nên mọi người từ ghế 2 trở đi phải dịch sang phải một ghế để nhường chỗ. Muốn làm được điều này, hàng ghế phải còn trống một ghế ở cuối.
 
-Để chèn 25 vào chỉ số 2, mọi phần tử từ chỉ số 2 trở đi phải dịch sang phải một ô. Hãy bắt đầu từ phần tử **cuối cùng**, nếu không bạn sẽ ghi đè dữ liệu còn cần dùng:
+Thứ tự rất quan trọng: hãy dời phần tử **cuối cùng** trước. Nếu bạn bắt đầu từ phía trước, bạn sẽ ghi đè lên phần tử kế tiếp trước khi kịp sao chép nó.
 
 ```text
-bắt đầu : [10, 20, 30, 40, 50,  _ ]
-dịch    : [10, 20,  _, 30, 40, 50]
-chèn    : [10, 20, 25, 30, 40, 50]
+chỉ số:                  0     1     2     3     4     5
+ban đầu:                10    20    30    40    50     _
+dời 50 sang phải:       10    20    30    40    50    50
+dời 40 sang phải:       10    20    30    40    40    50
+dời 30 sang phải:       10    20    30    30    40    50
+đặt 25 vào:             10    20    25    30    40    50
 ```
 
-Xóa thì ngược lại: các phần tử phía sau phần tử bị xóa dịch sang trái một ô. Cả hai trường hợp đều phải dịch tối đa $n$ phần tử, nên chi phí là $O(n)$. Chèn hoặc xóa ở **cuối** mảng không phải dịch gì, nên chỉ tốn $O(1)$.
+Với 5 phần tử thì nhanh. Với một triệu phần tử, có thể phải dời tới một triệu phần tử. Vì vậy chèn gần **đầu** mảng thì chậm, còn chèn ở **cuối** thì nhanh, vì không ai phải dịch chỗ.
 
-### Mảng cố định và mảng động
+### Xóa: lấp chỗ trống
 
-Mảng cơ bản (`int arr[5]` trong C và C++, `int[]` trong Java) có kích thước cố định ngay khi tạo. Hầu hết ngôn ngữ còn cung cấp **mảng động** (dynamic array): `list` của Python, `std::vector` của C++, `ArrayList` của Java. Khi hết chỗ, mảng động cấp phát một khối lớn hơn (thường gấp đôi), chép toàn bộ phần tử sang đó rồi tiếp tục.
+Mảng không thể để trống một ghế ở giữa. Khi một phần tử rời đi, mọi người phía sau dịch sang trái một ghế.
 
-Việc chép tốn kém nhưng hiếm khi xảy ra. Nếu bạn thêm $n$ phần tử vào một mảng động ban đầu rỗng, việc chép xảy ra khi kích thước đạt 1, 2, 4, 8, ... và tổng số phần tử phải chép là:
+```text
+chỉ số:                  0     1     2     3     4
+ban đầu:                10    20    30    40    50
+dời 30 sang trái:       10    30    30    40    50
+dời 40 sang trái:       10    30    40    40    50
+dời 50 sang trái:       10    30    40    50    50
+thu nhỏ 1 ô:            10    30    40    50
+```
+
+Giống hệt như chèn: xóa gần đầu mảng thì phải dời nhiều, xóa ở cuối thì không phải dời gì.
+
+### Tìm kiếm: xem lần lượt từng ô
+
+Nếu bạn biết chỉ số, việc đọc là tức thì. Nhưng nếu bạn chỉ biết **giá trị**, ví dụ "số 40 nằm ở đâu?", máy tính không có đường tắt. Nó xem ghế 0, rồi ghế 1, rồi ghế 2, cứ thế cho đến khi gặp 40. Với mảng lớn thì việc này có thể mất khá lâu. (Nếu các phần tử đã được sắp xếp, có một mẹo nhanh hơn nhiều gọi là tìm kiếm nhị phân. Nó sẽ có trang riêng sau.)
+
+### Khi hàng ghế đầy: mảng tự mở rộng
+
+Một mảng cơ bản có số ghế cố định, quyết định ngay lúc tạo. Nếu bạn cần thêm chỗ thì sao?
+
+Hầu hết ngôn ngữ cung cấp **mảng tự mở rộng** (còn gọi là mảng động, dynamic array): `list` trong Python, `std::vector` trong C++, `ArrayList` trong Java. Khi hàng ghế đầy, nó dựng một hàng mới dài gấp đôi, dời mọi người sang đó, rồi bỏ hàng cũ. C không có sẵn loại này, nên bạn tự làm bằng `malloc` và `realloc`, như đoạn code bên dưới.
+
+Dời tất cả mọi người thì chậm, nhưng hiếm khi xảy ra. Sau khi hàng ghế được nhân đôi, còn rất nhiều chỗ trống, nên bạn thêm được nhiều phần tử trước lần dời kế tiếp. Vì vậy **tính trung bình**, thêm vào cuối vẫn nhanh.
+
+<details>
+<summary>Tùy chọn: vì sao "tính trung bình" lại nhanh</summary>
+
+Thêm $n$ phần tử lần lượt vào một mảng tự mở rộng ban đầu rỗng, mỗi lần đầy thì nhân đôi. Việc dời xảy ra khi kích thước đạt 1, 2, 4, 8, ... và tổng số phần tử đã dời là:
 
 $$
 1 + 2 + 4 + \dots + 2^k = 2^{k+1} - 1 < 2n \qquad (2^k < n)
 $$
 
-Chia đều cho $n$ lần thêm, mỗi lần thêm chép chưa tới 2 phần tử, nên thêm vào cuối tốn $O(1)$ tính trung bình. Đây gọi là $O(1)$ **khấu hao** (amortized).
+Tức là chưa đến 2 lần dời cho mỗi phần tử được thêm, nên chi phí phụ cho mỗi phần tử chỉ là một hằng số nhỏ. Điều này gọi là $O(1)$ **khấu hao** (amortized).
+
+</details>
 
 ## Code
 
-### Chèn và xóa bằng cách dịch phần tử
+Hãy chọn ngôn ngữ của bạn ở các tab. Lựa chọn được ghi nhớ trên mọi trang.
 
-Ở đây mảng có sức chứa cố định và một biến `size` riêng cho biết bao nhiêu ô đang được dùng.
+### Cơ bản: tạo, đọc, sửa, duyệt
 
 <Tabs groupId="language">
-  <TabItem value="python" label="Python" default>
+  <TabItem value="c" label="C" default>
 
-```python title="array_ops.py"
-def insert(arr, size, index, value):
-    """Chèn value vào vị trí index. Trả về kích thước mới."""
-    if size == len(arr):
-        raise OverflowError("array is full")
-    if not 0 <= index <= size:
-        raise IndexError("index out of range")
-    for i in range(size, index, -1):  # dịch sang phải, bắt đầu từ cuối
-        arr[i] = arr[i - 1]
-    arr[index] = value
-    return size + 1
+```c title="basics.c"
+#include <stdio.h>
 
+int main(void) {
+    int scores[5] = {10, 20, 30, 40, 50};  // mảng 5 số nguyên
 
-def remove(arr, size, index):
-    """Xóa phần tử ở vị trí index. Trả về kích thước mới."""
-    if not 0 <= index < size:
-        raise IndexError("index out of range")
-    for i in range(index, size - 1):  # dịch sang trái
-        arr[i] = arr[i + 1]
-    return size - 1
+    printf("%d\n", scores[2]);  // đọc chỉ số 2 -> in ra 30
+    scores[2] = 99;             // sửa chỉ số 2
 
-
-arr = [10, 20, 30, 40, 50, None]  # sức chứa 6, đang dùng 5 ô
-size = 5
-size = insert(arr, size, 2, 25)   # arr[:size] == [10, 20, 25, 30, 40, 50]
-size = remove(arr, size, 0)       # arr[:size] == [20, 25, 30, 40, 50]
+    for (int i = 0; i < 5; i++) {  // duyệt mọi phần tử (0 đến 4)
+        printf("%d ", scores[i]);  // in ra: 10 20 99 40 50
+    }
+    printf("\n");
+    return 0;
+}
 ```
 
   </TabItem>
   <TabItem value="cpp" label="C++">
 
-```cpp title="array_ops.cpp"
-#include <stdexcept>
-
-// Chèn value vào vị trí index. Trả về kích thước mới.
-int insertAt(int arr[], int size, int capacity, int index, int value) {
-    if (size == capacity) throw std::overflow_error("array is full");
-    if (index < 0 || index > size) throw std::out_of_range("index out of range");
-    for (int i = size; i > index; --i) {
-        arr[i] = arr[i - 1];  // dịch sang phải, bắt đầu từ cuối
-    }
-    arr[index] = value;
-    return size + 1;
-}
-
-// Xóa phần tử ở vị trí index. Trả về kích thước mới.
-int removeAt(int arr[], int size, int index) {
-    if (index < 0 || index >= size) throw std::out_of_range("index out of range");
-    for (int i = index; i < size - 1; ++i) {
-        arr[i] = arr[i + 1];  // dịch sang trái
-    }
-    return size - 1;
-}
+```cpp title="basics.cpp"
+#include <iostream>
 
 int main() {
-    int arr[6] = {10, 20, 30, 40, 50};  // sức chứa 6, đang dùng 5 ô
-    int size = 5;
-    size = insertAt(arr, size, 6, 2, 25);  // 10 20 25 30 40 50
-    size = removeAt(arr, size, 0);         // 20 25 30 40 50
+    int scores[5] = {10, 20, 30, 40, 50};  // mảng 5 số nguyên
+
+    std::cout << scores[2] << "\n";  // đọc chỉ số 2 -> in ra 30
+    scores[2] = 99;                  // sửa chỉ số 2
+
+    for (int score : scores) {       // duyệt mọi phần tử
+        std::cout << score << " ";   // in ra: 10 20 99 40 50
+    }
+    std::cout << "\n";
 }
+```
+
+  </TabItem>
+  <TabItem value="python" label="Python">
+
+```python title="basics.py"
+scores = [10, 20, 30, 40, 50]  # danh sách 5 số nguyên
+
+print(scores[2])  # đọc chỉ số 2 -> in ra 30
+scores[2] = 99    # sửa chỉ số 2
+
+for score in scores:       # duyệt mọi phần tử
+    print(score, end=" ")  # in ra: 10 20 99 40 50
+print()
 ```
 
   </TabItem>
   <TabItem value="java" label="Java">
 
-```java title="ArrayOps.java"
-public class ArrayOps {
-    // Chèn value vào vị trí index. Trả về kích thước mới.
-    static int insert(int[] arr, int size, int index, int value) {
-        if (size == arr.length) throw new IllegalStateException("array is full");
-        if (index < 0 || index > size) throw new IndexOutOfBoundsException("index out of range");
-        for (int i = size; i > index; i--) {
-            arr[i] = arr[i - 1];  // dịch sang phải, bắt đầu từ cuối
-        }
-        arr[index] = value;
-        return size + 1;
-    }
-
-    // Xóa phần tử ở vị trí index. Trả về kích thước mới.
-    static int remove(int[] arr, int size, int index) {
-        if (index < 0 || index >= size) throw new IndexOutOfBoundsException("index out of range");
-        for (int i = index; i < size - 1; i++) {
-            arr[i] = arr[i + 1];  // dịch sang trái
-        }
-        return size - 1;
-    }
-
+```java title="Basics.java"
+public class Basics {
     public static void main(String[] args) {
-        int[] arr = {10, 20, 30, 40, 50, 0};  // sức chứa 6, đang dùng 5 ô
-        int size = 5;
-        size = insert(arr, size, 2, 25);  // 10 20 25 30 40 50
-        size = remove(arr, size, 0);      // 20 25 30 40 50
+        int[] scores = {10, 20, 30, 40, 50};  // mảng 5 số nguyên
+
+        System.out.println(scores[2]);  // đọc chỉ số 2 -> in ra 30
+        scores[2] = 99;                 // sửa chỉ số 2
+
+        for (int score : scores) {  // duyệt mọi phần tử
+            System.out.print(score + " ");  // 10 20 99 40 50
+        }
+        System.out.println();
     }
 }
 ```
@@ -164,49 +183,234 @@ public class ArrayOps {
   </TabItem>
 </Tabs>
 
-### Mảng động trong thư viện chuẩn
+### Chèn và xóa bằng cách dịch phần tử
 
-Trong thực tế bạn dùng mảng động có sẵn và để nó tự quản lý sức chứa.
+Ở đây mảng có chỗ cho 6 phần tử nhưng mới dùng 5, và biến `size` theo dõi điều đó. Để code ngắn gọn, các hàm này giả định chỉ số hợp lệ và còn chỗ cho thêm một phần tử. Code thực tế nên kiểm tra cả hai.
 
 <Tabs groupId="language">
-  <TabItem value="python" label="Python" default>
+  <TabItem value="c" label="C" default>
 
-```python
-nums = [10, 20, 30]
-nums.append(40)     # O(1) khấu hao
-nums.insert(1, 15)  # O(n): dịch phần đuôi
-nums.pop()          # O(1): xóa phần tử cuối
-nums.pop(0)         # O(n): dịch mọi phần tử sang trái
-x = nums[2]         # O(1)
+```c title="insert_remove.c"
+#include <stdio.h>
+
+// Đặt value vào chỉ số pos. Trả về kích thước mới.
+int insert_at(int arr[], int size, int pos, int value) {
+    for (int i = size; i > pos; i--) {
+        arr[i] = arr[i - 1];  // dịch sang phải, từ cuối
+    }
+    arr[pos] = value;
+    return size + 1;
+}
+
+// Xóa phần tử ở chỉ số pos. Trả về kích thước mới.
+int remove_at(int arr[], int size, int pos) {
+    for (int i = pos; i < size - 1; i++) {
+        arr[i] = arr[i + 1];  // dịch sang trái, từ đầu
+    }
+    return size - 1;
+}
+
+int main(void) {
+    int arr[6] = {10, 20, 30, 40, 50};  // chỗ cho 6, đang dùng 5
+    int size = 5;
+
+    size = insert_at(arr, size, 2, 25);  // 10 20 25 30 40 50
+    size = remove_at(arr, size, 0);      // 20 25 30 40 50
+
+    for (int i = 0; i < size; i++) printf("%d ", arr[i]);
+    printf("\n");
+    return 0;
+}
 ```
 
   </TabItem>
   <TabItem value="cpp" label="C++">
 
-```cpp
-#include <vector>
+```cpp title="insert_remove.cpp"
+#include <iostream>
 
-std::vector<int> nums = {10, 20, 30};
-nums.push_back(40);                 // O(1) khấu hao
-nums.insert(nums.begin() + 1, 15);  // O(n): dịch phần đuôi
-nums.pop_back();                    // O(1): xóa phần tử cuối
-nums.erase(nums.begin());           // O(n): dịch mọi phần tử sang trái
-int x = nums[2];                    // O(1)
+// Đặt value vào chỉ số pos. Trả về kích thước mới.
+int insert_at(int arr[], int size, int pos, int value) {
+    for (int i = size; i > pos; i--) {
+        arr[i] = arr[i - 1];  // dịch sang phải, từ cuối
+    }
+    arr[pos] = value;
+    return size + 1;
+}
+
+// Xóa phần tử ở chỉ số pos. Trả về kích thước mới.
+int remove_at(int arr[], int size, int pos) {
+    for (int i = pos; i < size - 1; i++) {
+        arr[i] = arr[i + 1];  // dịch sang trái, từ đầu
+    }
+    return size - 1;
+}
+
+int main() {
+    int arr[6] = {10, 20, 30, 40, 50};  // chỗ cho 6, đang dùng 5
+    int size = 5;
+
+    size = insert_at(arr, size, 2, 25);  // 10 20 25 30 40 50
+    size = remove_at(arr, size, 0);      // 20 25 30 40 50
+
+    for (int i = 0; i < size; i++) std::cout << arr[i] << " ";
+    std::cout << "\n";
+}
+```
+
+  </TabItem>
+  <TabItem value="python" label="Python">
+
+```python title="insert_remove.py"
+def insert_at(arr, size, pos, value):
+    """Đặt value vào chỉ số pos. Trả về kích thước mới."""
+    for i in range(size, pos, -1):
+        arr[i] = arr[i - 1]  # dịch sang phải, từ cuối
+    arr[pos] = value
+    return size + 1
+
+
+def remove_at(arr, size, pos):
+    """Xóa phần tử ở chỉ số pos. Trả về kích thước mới."""
+    for i in range(pos, size - 1):
+        arr[i] = arr[i + 1]  # dịch sang trái, từ đầu
+    return size - 1
+
+
+arr = [10, 20, 30, 40, 50, None]  # chỗ cho 6, đang dùng 5
+size = 5
+
+size = insert_at(arr, size, 2, 25)  # 10 20 25 30 40 50
+size = remove_at(arr, size, 0)      # 20 25 30 40 50
+
+print(arr[:size])
 ```
 
   </TabItem>
   <TabItem value="java" label="Java">
 
-```java
+```java title="InsertRemove.java"
+public class InsertRemove {
+    // Đặt value vào chỉ số pos. Trả về kích thước mới.
+    static int insertAt(int[] arr, int size, int pos, int value) {
+        for (int i = size; i > pos; i--) {
+            arr[i] = arr[i - 1];  // dịch sang phải, từ cuối
+        }
+        arr[pos] = value;
+        return size + 1;
+    }
+
+    // Xóa phần tử ở chỉ số pos. Trả về kích thước mới.
+    static int removeAt(int[] arr, int size, int pos) {
+        for (int i = pos; i < size - 1; i++) {
+            arr[i] = arr[i + 1];  // dịch sang trái, từ đầu
+        }
+        return size - 1;
+    }
+
+    public static void main(String[] args) {
+        int[] arr = {10, 20, 30, 40, 50, 0};  // chỗ cho 6, đang dùng 5
+        int size = 5;
+
+        size = insertAt(arr, size, 2, 25);  // 10 20 25 30 40 50
+        size = removeAt(arr, size, 0);      // 20 25 30 40 50
+
+        for (int i = 0; i < size; i++) System.out.print(arr[i] + " ");
+        System.out.println();
+    }
+}
+```
+
+  </TabItem>
+</Tabs>
+
+### Mảng tự mở rộng
+
+Trong C, bạn tự lo việc mở rộng: xin bộ nhớ bằng `malloc`, xin khối lớn hơn bằng `realloc` khi hàng ghế đầy, và trả bộ nhớ lại bằng `free`. (Để code ngắn, đoạn dưới không kiểm tra `malloc` và `realloc` có thành công hay không. Code thực tế nên kiểm tra.) Các ngôn ngữ khác làm hết những việc này giúp bạn. Trong code bên dưới, các thao tác ghi "chậm" là những thao tác khiến các phần tử khác phải dịch chỗ, như bạn đã thấy ở trên.
+
+<Tabs groupId="language">
+  <TabItem value="c" label="C" default>
+
+```c title="growing.c"
+#include <stdio.h>
+#include <stdlib.h>
+
+int main(void) {
+    int capacity = 2;  // số ghế trong hàng
+    int size = 0;      // số ghế đã có người
+    int *nums = malloc(capacity * sizeof(int));  // xin một hàng 2 ghế
+
+    for (int i = 1; i <= 5; i++) {
+        if (size == capacity) {  // hàng ghế đã đầy
+            // lấy hàng dài gấp đôi và dời mọi người sang
+            capacity *= 2;
+            nums = realloc(nums, capacity * sizeof(int));
+        }
+        nums[size] = i * 10;  // thêm phần tử mới vào cuối
+        size++;
+    }
+
+    // in ra mọi phần tử: 10 20 30 40 50
+    for (int i = 0; i < size; i++) printf("%d ", nums[i]);
+    printf("\n");
+
+    free(nums);  // dùng xong thì trả bộ nhớ lại
+    return 0;
+}
+```
+
+  </TabItem>
+  <TabItem value="cpp" label="C++">
+
+```cpp title="growing.cpp"
+#include <iostream>
+#include <vector>
+
+int main() {
+    std::vector<int> nums = {10, 20, 30};
+
+    nums.push_back(40);                 // thêm vào cuối: nhanh
+    nums.insert(nums.begin() + 1, 15);  // chèn vào chỉ số 1: chậm
+    nums.pop_back();                    // xóa cuối: nhanh
+    nums.erase(nums.begin());           // xóa đầu: chậm
+
+    std::cout << nums[2] << "\n";       // đọc theo chỉ số: nhanh
+}
+```
+
+  </TabItem>
+  <TabItem value="python" label="Python">
+
+```python title="growing.py"
+nums = [10, 20, 30]
+
+nums.append(40)     # thêm vào cuối: nhanh
+nums.insert(1, 15)  # chèn vào chỉ số 1: chậm
+nums.pop()          # xóa cuối: nhanh
+nums.pop(0)         # xóa đầu: chậm
+
+print(nums[2])      # đọc theo chỉ số: nhanh
+```
+
+  </TabItem>
+  <TabItem value="java" label="Java">
+
+```java title="Growing.java"
 import java.util.ArrayList;
 import java.util.List;
 
-List<Integer> nums = new ArrayList<>(List.of(10, 20, 30));
-nums.add(40);                    // O(1) khấu hao
-nums.add(1, 15);                 // O(n): dịch phần đuôi
-nums.remove(nums.size() - 1);    // O(1): xóa phần tử cuối
-nums.remove(0);                  // O(n): dịch mọi phần tử sang trái
-int x = nums.get(2);             // O(1)
+public class Growing {
+    public static void main(String[] args) {
+        List<Integer> nums = new ArrayList<>(List.of(10, 20, 30));
+
+        nums.add(40);                  // thêm vào cuối: nhanh
+        nums.add(1, 15);               // chèn vào chỉ số 1: chậm
+        nums.remove(nums.size() - 1);  // xóa cuối: nhanh
+        nums.remove(0);                // xóa đầu: chậm
+
+        System.out.println(nums.get(2));  // đọc theo chỉ số: nhanh
+    }
+}
 ```
 
   </TabItem>
@@ -214,30 +418,36 @@ int x = nums.get(2);             // O(1)
 
 ## Độ phức tạp
 
-| Thao tác                                | Thời gian   | Ghi chú                                                  |
-| --------------------------------------- | ----------- | -------------------------------------------------------- |
-| Truy cập hoặc cập nhật theo chỉ số      | $O(1)$      | Tính trực tiếp từ công thức địa chỉ                      |
-| Tìm kiếm trong mảng chưa sắp xếp        | $O(n)$      | Duyệt tuyến tính                                         |
-| Tìm kiếm trong mảng đã sắp xếp          | $O(\log n)$ | Tìm kiếm nhị phân                                        |
-| Chèn hoặc xóa ở cuối                    | $O(1)$      | Khấu hao với mảng động                                   |
-| Chèn hoặc xóa ở đầu hoặc giữa           | $O(n)$      | Phải dịch các phần tử                                    |
-| Bộ nhớ                                  | $O(n)$      | Mảng động có thể giữ thêm một phần sức chứa dư chưa dùng |
+Độ phức tạp trả lời một câu hỏi: **khi mảng lớn lên, thao tác này chậm đi bao nhiêu?** Hiện tại chỉ cần hai thuật ngữ:
+
+- **O(1)**: tức thì. Công sức như nhau dù mảng có 10 hay 10 triệu phần tử.
+- **O(n)**: công sức tăng theo số phần tử, gọi là **n**. Số phần tử gấp đôi thì công việc xấp xỉ gấp đôi.
+
+| Thao tác                                | Chi phí     | Nói bằng lời                                                                  |
+| --------------------------------------- | ----------- | ----------------------------------------------------------------------------- |
+| Đọc hoặc sửa phần tử ở một chỉ số       | $O(1)$      | Đi thẳng đến ghế đó.                                                          |
+| Thêm hoặc xóa ở cuối                    | $O(1)$      | Không ai phải dịch chỗ. Mảng tự mở rộng chỉ chậm vào lúc nó phải mở rộng.     |
+| Chèn hoặc xóa ở đầu hoặc giữa           | $O(n)$      | Mọi người phía sau ghế đó phải dịch sang.                                     |
+| Tìm một giá trị trong mảng chưa sắp xếp | $O(n)$      | Xem lần lượt từng ghế. Trường hợp xấu nhất là xem hết.                        |
+| Tìm một giá trị trong mảng đã sắp xếp   | $O(\log n)$ | Tìm kiếm nhị phân. Số phần tử gấp đôi thì chỉ thêm đúng một bước.             |
+| Bộ nhớ sử dụng                          | $O(n)$      | Mỗi phần tử một ghế.                                                          |
 
 ## Khi nào nên dùng
 
-Dùng mảng khi:
+Mảng rất phù hợp khi:
 
-- Bạn cần truy cập nhanh theo chỉ số.
-- Bạn chủ yếu đọc, duyệt, hoặc thêm vào cuối.
-- Tốc độ quan trọng: các phần tử nằm sát nhau trong bộ nhớ nên việc duyệt rất nhanh trên CPU hiện đại.
+- Bạn đọc phần tử theo vị trí, như các ngày trong tuần, các điểm ảnh của một bức hình, hay điểm số của một trò chơi.
+- Bạn đi qua tất cả phần tử theo thứ tự.
+- Bạn chủ yếu thêm và xóa ở cuối, như giỏ hàng.
+- Bạn cần tốc độ. Các phần tử nằm sát nhau trong bộ nhớ, và máy tính xử lý kiểu này rất hiệu quả.
 
-Hãy cân nhắc cấu trúc khác khi:
+Hãy xem xét cấu trúc khác khi:
 
 - Bạn thường xuyên chèn hoặc xóa ở đầu hoặc giữa. Danh sách liên kết (linked list) hoặc deque phù hợp hơn.
-- Bạn tìm phần tử theo giá trị hoặc theo khóa. Bảng băm (hash table) làm việc đó trong $O(1)$ tính trung bình.
+- Bạn tra cứu phần tử theo tên hoặc khóa thay vì theo vị trí. Bảng băm (hash table) làm việc đó nhanh hơn nhiều.
 
 :::warning[Lỗi thường gặp]
-- **Lỗi lệch một đơn vị (off-by-one).** Mảng $n$ phần tử có chỉ số hợp lệ từ $0$ đến $n - 1$. Chỉ số $n$ nằm ngoài phạm vi.
-- **C và C++ không kiểm tra giới hạn.** Đọc `arr[n]` là hành vi không xác định (undefined behavior), không phải một lỗi báo ra. Chương trình có thể bị crash, hoặc đọc ra giá trị rác mà không báo gì.
-- **Chèn chậm trong vòng lặp.** Gọi `insert(0, x)` hoặc `pop(0)` trong một vòng lặp biến thuật toán $O(n)$ thành $O(n^2)$.
+- **Lệch một đơn vị.** Mảng có 5 phần tử thì chỉ số từ 0 đến 4. `scores[5]` không tồn tại.
+- **C và C++ không có lưới an toàn.** Đi quá cuối mảng không báo lỗi. Chương trình đọc hoặc ghi vào bất cứ thứ gì đang nằm cạnh mảng. Nó có thể bị crash, hoặc âm thầm cho kết quả sai.
+- **Vòng lặp chậm.** Chèn hoặc xóa ở đầu mảng bên trong một vòng lặp khiến mọi người phải dịch chỗ mỗi lần, và một chương trình nhanh thành chậm.
 :::
