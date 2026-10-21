@@ -1,6 +1,6 @@
 ---
 title: Mảng (Array)
-description: Một dãy ô nằm sát nhau, mỗi ô có một số thứ tự, nên bạn nhảy thẳng đến được phần tử nào cũng được.
+description: Một dãy ô nằm sát nhau, mỗi ô có một số thứ tự. Mảng tĩnh có số ô cố định. Mảng động tự lớn lên khi hết chỗ.
 sidebar_position: 1
 ---
 
@@ -12,7 +12,13 @@ import ArrayDiagram from '@site/src/components/ArrayDiagram';
 
 **Mảng** là cách đơn giản nhất để giữ một tập hợp các thứ theo thứ tự: một dãy ô nằm sát nhau, mỗi ô được đánh một số.
 
-## Ý tưởng
+Mảng có hai loại, và trang này tách chúng ra riêng:
+
+1. Đầu tiên là **ý tưởng cốt lõi** mà mọi mảng đều có chung.
+2. Rồi đến **mảng tĩnh**: một dãy có số ô cố định, không bao giờ thay đổi.
+3. Rồi đến **mảng động**: một dãy tự lớn lên khi hết chỗ.
+
+## Ý tưởng: một hàng ghế đánh số
 
 Hãy hình dung một hàng ghế đánh số trong rạp chiếu phim. Mỗi ghế có một người ngồi, các ghế nằm sát nhau, và mỗi ghế có một con số. Nếu vé của bạn ghi ghế số 3, bạn đi thẳng đến ghế số 3. Bạn không cần kiểm tra ghế 0, 1 và 2 trước.
 
@@ -39,15 +45,63 @@ Ví dụ, nếu `base` là 1000 và `s` là 4, chỉ số 3 nằm ở $1000 + 3 
 
 </details>
 
-## Cách hoạt động
+### Kích thước và sức chứa
 
-### Đọc và sửa: tức thì
+Hai con số mô tả mọi mảng:
 
-Đọc hoặc sửa `scores[3]` tốn một công sức nhỏ như nhau, dù mảng có 5 phần tử hay 5 triệu phần tử. Máy tính nhảy thẳng tới ghế đó và không hề nhìn các ghế khác.
+- **Sức chứa** (capacity) là số ghế mà hàng có.
+- **Kích thước** (size, còn gọi là **độ dài**, length) là số ghế đang có phần tử.
+
+Nếu hàng có 5 ghế và 3 ghế đang có người, sức chứa là 5 và kích thước là 3. Các ghế đã có người luôn là những ghế đầu tiên, ở bên trái. Các ghế trống là chỗ dự phòng.
+
+<ArrayDiagram name="size 3, capacity 5" indexLabel="chỉ số" labelWidth="11rem" items={[10, 20, 30, null, null]} />
+
+Với một mảng thông thường, hai con số này thường bằng nhau, vì ghế nào cũng có người. Hai con số trở nên khác nhau khi bạn chủ động để dư một số ghế, và hai loại mảng làm việc đó theo hai cách khác nhau.
+
+### Hai loại mảng
+
+| | **Mảng tĩnh** (kích thước cố định) | **Mảng động** (có thể lớn lên) |
+| --- | --- | --- |
+| Số ghế | Quyết định lúc tạo. Không bao giờ đổi. | Tự lớn lên khi đầy. |
+| Hình dung | Một hàng ghế rạp được bắt vít xuống sàn. | Một hàng được đổi sang hàng dài hơn khi đầy. |
+| C | `int a[5]` | Không có sẵn. Bạn tự dựng bằng `malloc` (xem code bên dưới). |
+| C++ | `int a[5]` hoặc `std::array<int, 5>` | `std::vector` |
+| Python | Không có sẵn. Một `list` mà bạn không bao giờ thêm hay xóa phần tử thì hoạt động như vậy. | `list` |
+| Java | `int[]` | `ArrayList` |
+
+Ở đây "tĩnh" chỉ có nghĩa là "kích thước cố định". Không quan trọng bộ nhớ được lấy vào lúc nào. Một mảng C tạo bằng `malloc(5 * sizeof(int))` có kích thước được chọn trong lúc chương trình chạy, nhưng một khi đã tạo thì không bao giờ đổi kích thước được nữa, nên theo nghĩa này nó vẫn là mảng tĩnh. Chữ "động" được dành cho những mảng có thể **thay đổi kích thước**.
+
+### Mọi mảng đều làm được gì
+
+**Đọc hoặc sửa một phần tử: tức thì.** Đọc hoặc sửa `scores[3]` tốn một công sức nhỏ như nhau, dù mảng có 5 phần tử hay 5 triệu phần tử. Máy tính nhảy thẳng tới ghế đó và không hề nhìn các ghế khác.
+
+**Tìm một giá trị: xem lần lượt từng ô.** Nếu bạn biết chỉ số, việc đọc là tức thì. Nhưng nếu bạn chỉ biết **giá trị**, ví dụ "số 40 nằm ở đâu?", máy tính không có đường tắt. Nó xem ghế 0, rồi ghế 1, rồi ghế 2, cứ thế cho đến khi gặp 40. Với mảng lớn thì việc này có thể mất khá lâu. (Nếu các phần tử đã được sắp xếp, có một mẹo nhanh hơn nhiều gọi là tìm kiếm nhị phân. Nó sẽ có trang riêng sau.)
+
+## Mảng tĩnh
+
+### Ý tưởng
+
+**Mảng tĩnh** (static array) là một dãy có số ghế được quyết định lúc bạn tạo ra nó, và không bao giờ thay đổi. Nó giống một hàng ghế rạp bị bắt vít xuống sàn. Bạn đổi được ai ngồi ở ghế nào, nhưng không thêm được ghế và cũng không bớt được ghế.
+
+| Bạn làm được | Bạn không làm được |
+| --- | --- |
+| Đọc bất kỳ phần tử nào ngay lập tức | Thêm phần tử thứ 6 vào mảng 5 ghế |
+| Sửa bất kỳ phần tử nào | Bớt đi một ghế |
+| Đi qua tất cả các phần tử | Làm cho hàng dài ra |
+
+Mảng tĩnh rất phù hợp khi bạn biết trước số phần tử: 7 ngày trong tuần, 12 tháng trong năm, các ô của bàn cờ, các giá trị đỏ, xanh lá và xanh dương của một màu. Nó đơn giản và nhanh nhất có thể, và chỉ dùng đúng lượng bộ nhớ nó cần.
+
+### Mảng tĩnh dùng một phần
+
+Thường bạn không biết chính xác số lượng, nhưng biết một **mức tối đa**. Khi đó bạn tạo một hàng có đủ ghế cho mức tối đa, và giữ một con số riêng cho biết bao nhiêu ghế đang được dùng. Con số đó là **size**. Bản thân mảng không đổi: chỉ có con số đếm của bạn đổi.
+
+<ArrayDiagram name="size 3, capacity 6" indexLabel="chỉ số" labelWidth="11rem" items={[10, 20, 30, null, null, null]} />
+
+Ba ghế trống là chỗ dự phòng. Mảng vẫn có 6 ghế, và code theo dõi xem bao nhiêu ghế đang được dùng.
 
 ### Chèn: mọi người dịch chỗ
 
-Giả sử một phần tử mới, `25`, muốn ngồi ghế số 2, nhưng ghế 2 đã có người. Các ghế không thể banh ra, nên mọi người từ ghế 2 trở đi phải dịch sang phải một ghế để nhường chỗ. Muốn làm được điều này, hàng ghế phải còn trống một ghế ở cuối.
+Giả sử một phần tử mới, `25`, muốn ngồi ghế số 2, nhưng ghế 2 đã có người. Các ghế không thể banh ra, nên mọi người từ ghế 2 trở đi phải dịch sang phải một ghế để nhường chỗ. Muốn làm được điều này, hàng phải còn trống một ghế ở cuối. Nếu size đã bằng capacity thì không còn chỗ và việc chèn là không thể.
 
 Thứ tự rất quan trọng: hãy dời phần tử **cuối cùng** trước. Nếu bạn bắt đầu từ phía trước, bạn sẽ ghi đè lên phần tử kế tiếp trước khi kịp sao chép nó.
 
@@ -64,7 +118,7 @@ Với 5 phần tử thì nhanh. Với một triệu phần tử, có thể phả
 
 ### Xóa: lấp chỗ trống
 
-Mảng không thể để trống một ghế ở giữa. Khi một phần tử rời đi, mọi người phía sau dịch sang trái một ghế.
+Mảng không thể để trống một ghế ở giữa. Khi một phần tử rời đi, mọi người phía sau dịch sang trái một ghế, và size giảm đi một.
 
 ```text
 chỉ số:                  0     1     2     3     4
@@ -77,51 +131,113 @@ thu nhỏ 1 ô:            10    30    40    50
 
 Giống hệt như chèn: xóa gần đầu mảng thì phải dời nhiều, xóa ở cuối thì không phải dời gì.
 
-### Tìm kiếm: xem lần lượt từng ô
+### Khi hàng ghế đầy
 
-Nếu bạn biết chỉ số, việc đọc là tức thì. Nhưng nếu bạn chỉ biết **giá trị**, ví dụ "số 40 nằm ở đâu?", máy tính không có đường tắt. Nó xem ghế 0, rồi ghế 1, rồi ghế 2, cứ thế cho đến khi gặp 40. Với mảng lớn thì việc này có thể mất khá lâu. (Nếu các phần tử đã được sắp xếp, có một mẹo nhanh hơn nhiều gọi là tìm kiếm nhị phân. Nó sẽ có trang riêng sau.)
+Mảng tĩnh không thể lớn lên. Nếu hết ghế, bạn có hai lựa chọn:
 
-### Khi hàng ghế đầy: mảng tự mở rộng
+- **Chọn trước một sức chứa lớn hơn.** Nếu nó quá nhỏ, bạn vẫn hết chỗ. Nếu nó quá lớn, bạn lãng phí bộ nhớ.
+- **Tự dựng một mảng lớn hơn bằng tay.** Tạo một mảng mới dài hơn, sao chép mọi phần tử sang đó, và bỏ mảng cũ.
 
-Một mảng cơ bản có số ghế cố định, quyết định ngay lúc tạo. Nếu bạn cần thêm chỗ thì sao?
+Lựa chọn thứ hai là một việc khá nhiều công sức nếu phải làm mỗi lần. Mảng động làm đúng việc đó cho bạn, một cách tự động.
 
-Hầu hết ngôn ngữ cung cấp **mảng tự mở rộng** (còn gọi là mảng động, dynamic array): `list` trong Python, `std::vector` trong C++, `ArrayList` trong Java. Khi hàng ghế đầy, nó dựng một hàng mới lớn hơn (thường dài gấp 1,5 đến 2 lần, tùy ngôn ngữ), dời mọi người sang đó, rồi bỏ hàng cũ. C không có sẵn loại này, nên bạn tự làm bằng `malloc` và `realloc`, như đoạn code bên dưới. (`list` của Python và `ArrayList` của Java thật ra lưu tham chiếu đến các phần tử, nhưng mọi điều trên trang này vẫn đúng với chúng.)
+## Mảng động
 
-Dời tất cả mọi người thì chậm, nhưng hiếm khi xảy ra. Sau khi hàng ghế được mở rộng, còn rất nhiều chỗ trống, nên bạn thêm được nhiều phần tử trước lần dời kế tiếp. Vì vậy **tính trung bình**, thêm vào cuối vẫn nhanh.
+### Ý tưởng
+
+**Mảng động** (dynamic array) là một mảng tĩnh cải trang. Bên trong, nó giữ ba thứ: một mảng tĩnh chứa các phần tử, **size** (số ghế đang dùng) và **capacity** (số ghế mà mảng tĩnh có).
+
+Nhìn từ bên ngoài, nó hoạt động như một hàng có thể lớn lên. `list` của Python, `std::vector` của C++ và `ArrayList` của Java đều là mảng động. C không có sẵn loại này, nên bạn tự dựng nó, như trong code bên dưới.
+
+### Thêm vào cuối: khi còn chỗ
+
+Nếu size nhỏ hơn capacity, có một ghế trống ngay sau phần tử cuối. Mảng động đặt phần tử mới vào ghế đó và tăng size lên một. Việc này tức thì.
+
+<ArrayDiagram name="size 3, capacity 5" indexLabel="chỉ số" labelWidth="11rem" items={[10, 20, 30, null, null]} />
+
+<ArrayDiagram name="thêm 40: size 4" labelWidth="11rem" items={[10, 20, 30, 40, null]} hideIndex highlight={[3]} />
+
+### Thêm vào cuối: khi hàng đã đầy
+
+Nếu size bằng capacity, không còn ghế trống. Mảng động lớn lên qua ba bước:
+
+1. Tạo một mảng tĩnh **mới, lớn hơn**.
+2. **Sao chép** mọi phần tử từ mảng cũ sang đó.
+3. **Bỏ** mảng cũ.
+
+Rồi phần tử mới được đặt vào ghế trống đầu tiên của mảng mới. Ở đây một hàng 4 ghế đã đầy, và `50` đến:
+
+<ArrayDiagram name="1. đầy: 4 trên 4 ghế" indexLabel="chỉ số" labelWidth="13rem" items={[10, 20, 30, 40]} />
+
+<ArrayDiagram name="2. một mảng mới có 8 ghế" labelWidth="13rem" items={[null, null, null, null, null, null, null, null]} hideIndex />
+
+<ArrayDiagram name="3. chép 4 phần tử sang" labelWidth="13rem" items={[10, 20, 30, 40, null, null, null, null]} hideIndex highlight={[0, 1, 2, 3]} />
+
+<ArrayDiagram name="4. thêm 50, bỏ mảng cũ" labelWidth="13rem" items={[10, 20, 30, 40, 50, null, null, null]} hideIndex highlight={[4]} />
+
+Mảng mới lớn hơn mức cần thiết, và là cố ý: nó còn chỗ cho 3 phần tử nữa trước lần lớn lên kế tiếp. Lớn hơn bao nhiêu là lựa chọn của người viết ra mảng động đó. Nhiều bản cài đặt lớn lên theo một hệ số không đổi, thường vào khoảng 1,5 đến 2 lần, tùy ngôn ngữ.
+
+### Vì sao lớn lên thật nhiều một lần
+
+Việc sao chép tốn thời gian, nên không nên lớn lên thường xuyên. Đó là lý do mảng mới lớn hơn nhiều, không chỉ hơn một ghế. Đây là chuyện xảy ra khi bạn thêm 9 phần tử, lần lượt từng cái, vào một mảng động ban đầu rỗng, khởi đầu với 1 ghế và nhân đôi khi đầy:
+
+| Lần push thứ                     | 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9  |
+| -------------------------------- | - | - | - | - | - | - | - | - | -- |
+| Capacity sau lần push            | 1 | 2 | 4 | 4 | 8 | 8 | 8 | 8 | 16 |
+| Số phần tử phải chép ở lần push này | 0 | 1 | 2 | 0 | 4 | 0 | 0 | 0 | 8  |
+
+Hầu hết các lần push không phải chép gì. Một vài lần phải chép nhiều, nhưng mỗi lần lớn lên đều để lại rất nhiều chỗ trống, nên lần lớn lên kế tiếp đến muộn hơn nhiều. Tổng cộng, 9 lần push đã chép $1 + 2 + 4 + 8 = 15$ phần tử, chưa tới 2 lần chép cho mỗi lần push. Vì vậy **tính trung bình**, thêm vào cuối vẫn nhanh.
 
 <details>
 <summary>Tùy chọn: vì sao "tính trung bình" lại nhanh</summary>
 
-Thêm $n$ phần tử lần lượt vào một mảng tự mở rộng ban đầu rỗng. Để phép tính đơn giản, giả sử mỗi lần đầy thì nó nhân đôi. (Các bản cài đặt thực tế dùng hệ số từ khoảng 1,1 đến 2, và kết luận vẫn như vậy.) Việc dời xảy ra khi kích thước đạt 1, 2, 4, 8, ... và tổng số phần tử đã dời là:
+Thêm $n$ phần tử lần lượt vào một mảng động ban đầu rỗng. Để phép tính đơn giản, giả sử nó nhân đôi mỗi khi đầy. (Các bản cài đặt thực tế dùng hệ số từ khoảng 1,1 đến 2, và kết luận vẫn như vậy.) Việc chép xảy ra khi size đạt 1, 2, 4, 8, ... và tổng số phần tử đã chép là:
 
 $$
 1 + 2 + 4 + \dots + 2^k = 2^{k+1} - 1 < 2n \qquad (2^k < n)
 $$
 
-Tức là chưa đến 2 lần dời cho mỗi phần tử được thêm, nên chi phí phụ cho mỗi phần tử chỉ là một hằng số nhỏ. Điều này gọi là $O(1)$ **khấu hao** (amortized).
+Tức là chưa đến 2 lần chép cho mỗi phần tử được thêm, nên chi phí phụ cho mỗi phần tử chỉ là một hằng số nhỏ. Điều này gọi là $O(1)$ **khấu hao** (amortized).
 
 </details>
 
+### Chèn và xóa ở giữa
+
+Ở đây không có gì đặc biệt. Mảng động vẫn là một hàng ghế, nên chèn ở đầu hoặc ở giữa khiến các phần tử phía sau phải **dịch chỗ**, y như mảng tĩnh ở trên. Nó tốn $O(n)$. Chỉ có thêm và xóa ở **cuối** là nhanh.
+
+### Chỗ dự phòng tốn bộ nhớ
+
+Sau mỗi lần lớn lên, nhiều ghế bị bỏ trống một cách cố ý. Với việc nhân đôi, số ghế trống có thể lên đến xấp xỉ số ghế đang dùng. Bạn đánh đổi một ít bộ nhớ lấy tốc độ.
+
+Nếu bạn biết trước sắp có bao nhiêu phần tử, bạn có thể xin sẵn sức chứa đó ngay từ đầu để khỏi phải lớn lên hết lần này đến lần khác. `vector` của C++ có `reserve`, và `ArrayList` của Java có `ensureCapacity`. `list` của Python tự quản lý sức chứa của nó.
+
+### Cẩn thận: lớn lên là dời cả nhà
+
+Lớn lên là chép các phần tử sang một mảng **mới**, nên các phần tử giờ nằm ở **địa chỉ mới**. Bất cứ thứ gì đã nhớ chỗ cũ của một phần tử (con trỏ, tham chiếu, iterator) giờ đang trỏ vào mảng cũ, thứ đã bị bỏ đi. Trong C++, một lần insert hoặc push khiến `vector` lớn lên sẽ làm mất hiệu lực mọi iterator và tham chiếu tới các phần tử của nó. Hãy tham chiếu tới phần tử bằng **chỉ số** thay vì bằng địa chỉ. Chỉ số vẫn đúng sau khi lớn lên.
+
 ## Code
 
-Hãy chọn ngôn ngữ của bạn ở các tab. Lựa chọn được ghi nhớ trên mọi trang.
+Mỗi loại có hai ví dụ. Với mảng tĩnh: cơ bản, và chèn xóa bằng cách dịch phần tử. Với mảng động: tự dựng một cái và xem nó lớn lên, và dùng cái có sẵn.
 
-### Cơ bản: tạo, đọc, sửa, duyệt
+Trong C, C++ và Java, mảng tĩnh là đồ thật. Python không có mảng kích thước cố định, nên các ví dụ Python dùng một `list` không bao giờ được thêm hay xóa phần tử.
+
+### Mảng tĩnh: cơ bản
 
 <Tabs groupId="language">
   <TabItem value="c" label="C" default>
 
-```c title="basics.c"
+```c title="static_basics.c"
 #include <stdio.h>
 
 int main(void) {
-    int scores[5] = {10, 20, 30, 40, 50};  // mảng 5 số nguyên
+    int scores[5] = {10, 20, 30, 40, 50};  // 5 ghế, cố định mãi mãi
+    int length = sizeof(scores) / sizeof(scores[0]);  // 5 ghế
 
-    printf("%d\n", scores[2]);  // đọc chỉ số 2 -> in ra 30
-    scores[2] = 99;             // sửa chỉ số 2
+    printf("length %d\n", length);  // length 5
+    printf("%d\n", scores[2]);      // đọc chỉ số 2 -> in ra 30
+    scores[2] = 99;                 // sửa chỉ số 2
 
-    for (int i = 0; i < 5; i++) {  // duyệt mọi phần tử (0 đến 4)
-        printf("%d ", scores[i]);  // in ra: 10 20 99 40 50
+    for (int i = 0; i < length; i++) {  // duyệt mọi phần tử
+        printf("%d ", scores[i]);       // in ra: 10 20 99 40 50
     }
     printf("\n");
     return 0;
@@ -131,17 +247,19 @@ int main(void) {
   </TabItem>
   <TabItem value="cpp" label="C++">
 
-```cpp title="basics.cpp"
+```cpp title="static_basics.cpp"
+#include <array>
 #include <iostream>
 
 int main() {
-    int scores[5] = {10, 20, 30, 40, 50};  // mảng 5 số nguyên
+    std::array<int, 5> scores = {10, 20, 30, 40, 50};  // 5 ghế, cố định
 
+    std::cout << "length " << scores.size() << "\n";  // length 5
     std::cout << scores[2] << "\n";  // đọc chỉ số 2 -> in ra 30
     scores[2] = 99;                  // sửa chỉ số 2
 
-    for (int score : scores) {       // duyệt mọi phần tử
-        std::cout << score << " ";   // in ra: 10 20 99 40 50
+    for (int score : scores) {      // duyệt mọi phần tử
+        std::cout << score << " ";  // in ra: 10 20 99 40 50
     }
     std::cout << "\n";
 }
@@ -150,9 +268,12 @@ int main() {
   </TabItem>
   <TabItem value="python" label="Python">
 
-```python title="basics.py"
-scores = [10, 20, 30, 40, 50]  # danh sách 5 số nguyên
+```python title="static_basics.py"
+# Python không có mảng cố định. Một list không bao giờ được thêm
+# hay xóa phần tử thì hoạt động như vậy.
+scores = [10, 20, 30, 40, 50]  # 5 ghế, ta không bao giờ thêm
 
+print("length", len(scores))  # length 5
 print(scores[2])  # đọc chỉ số 2 -> in ra 30
 scores[2] = 99    # sửa chỉ số 2
 
@@ -164,16 +285,17 @@ print()
   </TabItem>
   <TabItem value="java" label="Java">
 
-```java title="Basics.java"
-public class Basics {
+```java title="StaticBasics.java"
+public class StaticBasics {
     public static void main(String[] args) {
-        int[] scores = {10, 20, 30, 40, 50};  // mảng 5 số nguyên
+        int[] scores = {10, 20, 30, 40, 50};  // 5 ghế, cố định mãi mãi
 
+        System.out.println("length " + scores.length);  // length 5
         System.out.println(scores[2]);  // đọc chỉ số 2 -> in ra 30
         scores[2] = 99;                 // sửa chỉ số 2
 
-        for (int score : scores) {  // duyệt mọi phần tử
-            System.out.print(score + " ");  // 10 20 99 40 50
+        for (int score : scores) {          // duyệt mọi phần tử
+            System.out.print(score + " ");  // in ra: 10 20 99 40 50
         }
         System.out.println();
     }
@@ -183,17 +305,17 @@ public class Basics {
   </TabItem>
 </Tabs>
 
-### Chèn và xóa bằng cách dịch phần tử
+### Mảng tĩnh: chèn và xóa bằng cách dịch phần tử
 
-Ở đây mảng có chỗ cho 6 phần tử nhưng mới dùng 5, và biến `size` theo dõi điều đó. Để code ngắn gọn, các hàm này giả định chỉ số hợp lệ và còn chỗ cho thêm một phần tử. Code thực tế nên kiểm tra cả hai.
+Ở đây mảng có chỗ cho 6 phần tử nhưng mới dùng 5, và biến `size` theo dõi điều đó. Bản thân mảng không bao giờ đổi độ dài. Để code ngắn gọn, các hàm này giả định chỉ số hợp lệ và còn chỗ cho thêm một phần tử. Code thực tế nên kiểm tra cả hai.
 
 <Tabs groupId="language">
   <TabItem value="c" label="C" default>
 
-```c title="insert_remove.c"
+```c title="static_shift.c"
 #include <stdio.h>
 
-// Đặt value vào chỉ số pos. Trả về kích thước mới.
+// Đặt value vào chỉ số pos. Trả về size mới.
 int insert_at(int arr[], int size, int pos, int value) {
     for (int i = size; i > pos; i--) {
         arr[i] = arr[i - 1];  // dịch sang phải, từ cuối
@@ -202,7 +324,7 @@ int insert_at(int arr[], int size, int pos, int value) {
     return size + 1;
 }
 
-// Xóa phần tử ở chỉ số pos. Trả về kích thước mới.
+// Xóa phần tử ở chỉ số pos. Trả về size mới.
 int remove_at(int arr[], int size, int pos) {
     for (int i = pos; i < size - 1; i++) {
         arr[i] = arr[i + 1];  // dịch sang trái, từ đầu
@@ -226,10 +348,10 @@ int main(void) {
   </TabItem>
   <TabItem value="cpp" label="C++">
 
-```cpp title="insert_remove.cpp"
+```cpp title="static_shift.cpp"
 #include <iostream>
 
-// Đặt value vào chỉ số pos. Trả về kích thước mới.
+// Đặt value vào chỉ số pos. Trả về size mới.
 int insert_at(int arr[], int size, int pos, int value) {
     for (int i = size; i > pos; i--) {
         arr[i] = arr[i - 1];  // dịch sang phải, từ cuối
@@ -238,7 +360,7 @@ int insert_at(int arr[], int size, int pos, int value) {
     return size + 1;
 }
 
-// Xóa phần tử ở chỉ số pos. Trả về kích thước mới.
+// Xóa phần tử ở chỉ số pos. Trả về size mới.
 int remove_at(int arr[], int size, int pos) {
     for (int i = pos; i < size - 1; i++) {
         arr[i] = arr[i + 1];  // dịch sang trái, từ đầu
@@ -261,9 +383,9 @@ int main() {
   </TabItem>
   <TabItem value="python" label="Python">
 
-```python title="insert_remove.py"
+```python title="static_shift.py"
 def insert_at(arr, size, pos, value):
-    """Đặt value vào chỉ số pos. Trả về kích thước mới."""
+    """Đặt value vào chỉ số pos. Trả về size mới."""
     for i in range(size, pos, -1):
         arr[i] = arr[i - 1]  # dịch sang phải, từ cuối
     arr[pos] = value
@@ -271,7 +393,7 @@ def insert_at(arr, size, pos, value):
 
 
 def remove_at(arr, size, pos):
-    """Xóa phần tử ở chỉ số pos. Trả về kích thước mới."""
+    """Xóa phần tử ở chỉ số pos. Trả về size mới."""
     for i in range(pos, size - 1):
         arr[i] = arr[i + 1]  # dịch sang trái, từ đầu
     return size - 1
@@ -289,9 +411,9 @@ print(*arr[:size])
   </TabItem>
   <TabItem value="java" label="Java">
 
-```java title="InsertRemove.java"
-public class InsertRemove {
-    // Đặt value vào chỉ số pos. Trả về kích thước mới.
+```java title="StaticShift.java"
+public class StaticShift {
+    // Đặt value vào chỉ số pos. Trả về size mới.
     static int insertAt(int[] arr, int size, int pos, int value) {
         for (int i = size; i > pos; i--) {
             arr[i] = arr[i - 1];  // dịch sang phải, từ cuối
@@ -300,7 +422,7 @@ public class InsertRemove {
         return size + 1;
     }
 
-    // Xóa phần tử ở chỉ số pos. Trả về kích thước mới.
+    // Xóa phần tử ở chỉ số pos. Trả về size mới.
     static int removeAt(int[] arr, int size, int pos) {
         for (int i = pos; i < size - 1; i++) {
             arr[i] = arr[i + 1];  // dịch sang trái, từ đầu
@@ -324,37 +446,56 @@ public class InsertRemove {
   </TabItem>
 </Tabs>
 
-### Mảng tự mở rộng
+### Mảng động: tự dựng một cái
 
-Trong C, bạn tự lo việc mở rộng: xin bộ nhớ bằng `malloc`, xin khối lớn hơn bằng `realloc` khi hàng ghế đầy, và trả bộ nhớ lại bằng `free`. (Để code ngắn, đoạn dưới không kiểm tra `malloc` và `realloc` có thành công hay không. Code thực tế nên kiểm tra.) Các ngôn ngữ khác làm hết những việc này giúp bạn. Trong code bên dưới, các thao tác ghi "chậm" là những thao tác khiến các phần tử khác phải dịch chỗ, như bạn đã thấy ở trên.
+Đây là mảng động trong các hình ở trên, dựng trên một mảng tĩnh. Nó bắt đầu với 1 ghế và nhân đôi khi đầy, theo ba bước: một mảng mới lớn hơn, sao chép, bỏ mảng cũ. Chương trình thêm 9 phần tử và in ra capacity sau mỗi lần push, để bạn xem nó lớn lên. Nó cũng đếm tổng số phần tử đã được chép. Các con số chính là những số trong bảng ở trên.
 
 <Tabs groupId="language">
   <TabItem value="c" label="C" default>
 
-```c title="growing.c"
+```c title="dynamic_build.c"
 #include <stdio.h>
 #include <stdlib.h>
 
-int main(void) {
-    int capacity = 2;  // số ghế trong hàng
-    int size = 0;      // số ghế đã có người
-    int *nums = malloc(capacity * sizeof(int));  // xin một hàng 2 ghế
+typedef struct {
+    int *items;    // mảng tĩnh chứa các phần tử
+    int size;      // số ghế đang dùng
+    int capacity;  // số ghế của mảng tĩnh
+    int copies;    // số phần tử đã chép, để đếm
+} DynArray;
 
-    for (int i = 1; i <= 5; i++) {
-        if (size == capacity) {  // hàng ghế đã đầy
-            // lấy hàng dài gấp đôi và dời mọi người sang
-            capacity *= 2;
-            nums = realloc(nums, capacity * sizeof(int));
+void push(DynArray *a, int value) {
+    if (a->size == a->capacity) {  // đầy: lớn lên
+        int bigger = a->capacity * 2;
+        int *items = malloc(bigger * sizeof(int));  // 1. mảng lớn hơn
+        for (int i = 0; i < a->size; i++) {
+            items[i] = a->items[i];  // 2. chép mọi phần tử sang
+            a->copies++;
         }
-        nums[size] = i * 10;  // thêm phần tử mới vào cuối
-        size++;
+        free(a->items);  // 3. bỏ mảng cũ
+        a->items = items;
+        a->capacity = bigger;
     }
+    a->items[a->size] = value;  // ghế trống kế tiếp
+    a->size++;
+}
 
-    // in ra mọi phần tử: 10 20 30 40 50
-    for (int i = 0; i < size; i++) printf("%d ", nums[i]);
-    printf("\n");
+int main(void) {
+    DynArray a = {malloc(sizeof(int)), 0, 1, 0};  // bắt đầu với 1 ghế
 
-    free(nums);  // dùng xong thì trả bộ nhớ lại
+    printf("capacity:");
+    for (int i = 1; i <= 9; i++) {
+        push(&a, i * 10);
+        printf(" %d", a.capacity);  // capacity sau mỗi lần push
+    }
+    printf("\n");  // capacity: 1 2 4 4 8 8 8 8 16
+    printf("copied: %d\n", a.copies);  // copied: 15
+
+    printf("items:");
+    for (int i = 0; i < a.size; i++) printf(" %d", a.items[i]);
+    printf("\n");  // items: 10 20 30 40 50 60 70 80 90
+
+    free(a.items);
     return 0;
 }
 ```
@@ -362,18 +503,160 @@ int main(void) {
   </TabItem>
   <TabItem value="cpp" label="C++">
 
-```cpp title="growing.cpp"
+```cpp title="dynamic_build.cpp"
+#include <iostream>
+#include <memory>
+
+struct DynArray {
+    std::unique_ptr<int[]> items = std::make_unique<int[]>(1);  // ghế
+    int size = 0;      // số ghế đang dùng
+    int capacity = 1;  // số ghế của mảng tĩnh
+    int copies = 0;    // số phần tử đã chép, để đếm
+
+    void push(int value) {
+        if (size == capacity) {  // đầy: lớn lên
+            int bigger = capacity * 2;
+            auto grown = std::make_unique<int[]>(bigger);  // 1. lớn hơn
+            for (int i = 0; i < size; i++) {
+                grown[i] = items[i];  // 2. chép mọi phần tử sang
+                copies++;
+            }
+            items = std::move(grown);  // 3. mảng cũ được giải phóng
+            capacity = bigger;
+        }
+        items[size] = value;  // ghế trống kế tiếp
+        size++;
+    }
+};
+
+int main() {
+    DynArray a;  // bắt đầu với 1 ghế
+
+    std::cout << "capacity:";
+    for (int i = 1; i <= 9; i++) {
+        a.push(i * 10);
+        std::cout << " " << a.capacity;  // capacity sau mỗi lần push
+    }
+    std::cout << "\n";  // capacity: 1 2 4 4 8 8 8 8 16
+    std::cout << "copied: " << a.copies << "\n";  // copied: 15
+
+    std::cout << "items:";
+    for (int i = 0; i < a.size; i++) std::cout << " " << a.items[i];
+    std::cout << "\n";  // items: 10 20 30 40 50 60 70 80 90
+}
+```
+
+  </TabItem>
+  <TabItem value="python" label="Python">
+
+```python title="dynamic_build.py"
+class DynArray:
+    def __init__(self):
+        self.items = [None]  # một list cố định chứa phần tử
+        self.size = 0        # số ghế đang dùng
+        self.capacity = 1    # số ghế của list
+        self.copies = 0      # số phần tử đã chép, để đếm
+
+    def push(self, value):
+        if self.size == self.capacity:  # đầy: lớn lên
+            bigger = [None] * (self.capacity * 2)  # 1. một list lớn hơn
+            for i in range(self.size):
+                bigger[i] = self.items[i]  # 2. chép mọi phần tử sang
+                self.copies += 1
+            self.items = bigger  # 3. bỏ list cũ
+            self.capacity *= 2
+        self.items[self.size] = value  # ghế trống kế tiếp
+        self.size += 1
+
+
+a = DynArray()  # bắt đầu với 1 ghế
+
+capacities = []
+for i in range(1, 10):
+    a.push(i * 10)
+    capacities.append(a.capacity)  # capacity sau mỗi lần push
+print("capacity:", *capacities)  # capacity: 1 2 4 4 8 8 8 8 16
+print("copied:", a.copies)  # copied: 15
+print("items:", *a.items[:a.size])  # items: 10 20 30 40 50 60 70 80 90
+```
+
+  </TabItem>
+  <TabItem value="java" label="Java">
+
+```java title="DynamicBuild.java"
+public class DynamicBuild {
+    static class DynArray {
+        int[] items = new int[1];  // mảng tĩnh chứa phần tử
+        int size = 0;              // số ghế đang dùng
+        int capacity = 1;          // số ghế của mảng
+        int copies = 0;            // số phần tử đã chép, để đếm
+
+        void push(int value) {
+            if (size == capacity) {  // đầy: lớn lên
+                // 1. mảng lớn hơn
+                int[] bigger = new int[capacity * 2];
+                for (int i = 0; i < size; i++) {
+                    bigger[i] = items[i];  // 2. chép mọi phần tử sang
+                    copies++;
+                }
+                items = bigger;  // 3. bỏ mảng cũ
+                capacity *= 2;
+            }
+            items[size] = value;  // ghế trống kế tiếp
+            size++;
+        }
+    }
+
+    public static void main(String[] args) {
+        DynArray a = new DynArray();  // bắt đầu với 1 ghế
+
+        StringBuilder line = new StringBuilder("capacity:");
+        for (int i = 1; i <= 9; i++) {
+            a.push(i * 10);
+            // capacity sau mỗi lần push
+            line.append(" ").append(a.capacity);
+        }
+        System.out.println(line);  // capacity: 1 2 4 4 8 8 8 8 16
+        System.out.println("copied: " + a.copies);  // copied: 15
+
+        line = new StringBuilder("items:");
+        for (int i = 0; i < a.size; i++) {
+            line.append(" ").append(a.items[i]);
+        }
+        System.out.println(line);  // items: 10 20 30 40 50 60 70 80 90
+    }
+}
+```
+
+  </TabItem>
+</Tabs>
+
+### Mảng động: dùng cái có sẵn
+
+Trong thực tế bạn dùng mảng động có sẵn và để nó tự quản lý sức chứa. Các lời gọi được đánh dấu "chậm" là những lời gọi khiến các phần tử khác phải dịch chỗ, như bạn đã thấy ở trên.
+
+<Tabs groupId="language">
+  <TabItem value="c" label="C" default>
+
+Thư viện chuẩn của C không có mảng động. Hãy tự dựng, như ở trên. Trong code C thực tế bạn thường gọi `realloc`, hàm làm lớn một khối bộ nhớ và sao chép các phần tử giúp bạn.
+
+  </TabItem>
+  <TabItem value="cpp" label="C++">
+
+```cpp title="dynamic_ready.cpp"
 #include <iostream>
 #include <vector>
 
 int main() {
     std::vector<int> nums = {10, 20, 30};
+    nums.reserve(100);  // tùy chọn: xin sẵn chỗ cho 100
 
     nums.push_back(40);                 // thêm vào cuối: nhanh
     nums.insert(nums.begin() + 1, 15);  // chèn vào chỉ số 1: chậm
     nums.pop_back();                    // xóa cuối: nhanh
     nums.erase(nums.begin());           // xóa đầu: chậm
 
+    std::cout << "size " << nums.size() << "\n";  // size 3
     std::cout << nums[2] << "\n";       // đọc theo chỉ số: nhanh
 }
 ```
@@ -381,33 +664,36 @@ int main() {
   </TabItem>
   <TabItem value="python" label="Python">
 
-```python title="growing.py"
-nums = [10, 20, 30]
+```python title="dynamic_ready.py"
+nums = [10, 20, 30]  # Python tự quản lý capacity
 
 nums.append(40)     # thêm vào cuối: nhanh
 nums.insert(1, 15)  # chèn vào chỉ số 1: chậm
 nums.pop()          # xóa cuối: nhanh
 nums.pop(0)         # xóa đầu: chậm
 
+print("size", len(nums))  # size 3
 print(nums[2])      # đọc theo chỉ số: nhanh
 ```
 
   </TabItem>
   <TabItem value="java" label="Java">
 
-```java title="Growing.java"
+```java title="DynamicReady.java"
 import java.util.ArrayList;
 import java.util.List;
 
-public class Growing {
+public class DynamicReady {
     public static void main(String[] args) {
-        List<Integer> nums = new ArrayList<>(List.of(10, 20, 30));
+        ArrayList<Integer> nums = new ArrayList<>(List.of(10, 20, 30));
+        nums.ensureCapacity(100);  // tùy chọn: chỗ cho 100
 
         nums.add(40);                  // thêm vào cuối: nhanh
         nums.add(1, 15);               // chèn vào chỉ số 1: chậm
         nums.remove(nums.size() - 1);  // xóa cuối: nhanh
         nums.remove(0);                // xóa đầu: chậm
 
+        System.out.println("size " + nums.size());  // size 3
         System.out.println(nums.get(2));  // đọc theo chỉ số: nhanh
     }
 }
@@ -423,32 +709,53 @@ public class Growing {
 - **O(1)**: tức thì. Công sức như nhau dù mảng có 10 hay 10 triệu phần tử.
 - **O(n)**: công sức tăng theo số phần tử, gọi là **n**. Số phần tử gấp đôi thì công việc xấp xỉ gấp đôi.
 
-| Thao tác                                | Chi phí     | Nói bằng lời                                                                  |
-| --------------------------------------- | ----------- | ----------------------------------------------------------------------------- |
-| Đọc hoặc sửa phần tử ở một chỉ số       | $O(1)$      | Đi thẳng đến ghế đó.                                                          |
-| Thêm hoặc xóa ở cuối                    | $O(1)$      | Không ai phải dịch chỗ. Mảng tự mở rộng chỉ chậm vào lúc nó phải mở rộng.     |
-| Chèn hoặc xóa ở đầu hoặc giữa           | $O(n)$      | Mọi người phía sau ghế đó phải dịch sang.                                     |
-| Tìm một giá trị trong mảng chưa sắp xếp | $O(n)$      | Xem lần lượt từng ghế. Trường hợp xấu nhất là xem hết.                        |
-| Tìm một giá trị trong mảng đã sắp xếp   | $O(\log n)$ | Tìm kiếm nhị phân. Số phần tử gấp đôi thì chỉ thêm đúng một bước.             |
-| Bộ nhớ sử dụng                          | $O(n)$      | Mỗi phần tử một ghế.                                                          |
+Đây là hai loại mảng đặt cạnh nhau:
 
-## Khi nào nên dùng
+| Thao tác                                | Mảng tĩnh                      | Mảng động                          | Nói bằng lời                                                    |
+| --------------------------------------- | ------------------------------ | ---------------------------------- | --------------------------------------------------------------- |
+| Đọc hoặc sửa phần tử ở một chỉ số       | $O(1)$                         | $O(1)$                             | Đi thẳng đến ghế đó.                                            |
+| Thêm vào cuối                           | $O(1)$ nếu còn ghế trống, nếu không thì không thể | $O(1)$ trung bình | Mảng động chỉ chậm ở lần push hiếm hoi khiến nó phải lớn lên.   |
+| Xóa phần tử cuối                        | $O(1)$                         | $O(1)$                             | Chỉ cần giảm size. Không ai phải dịch chỗ.                      |
+| Chèn hoặc xóa ở đầu hoặc giữa           | $O(n)$                         | $O(n)$                             | Mọi người phía sau ghế đó phải dịch sang.                       |
+| Tìm một giá trị trong mảng chưa sắp xếp | $O(n)$                         | $O(n)$                             | Xem lần lượt từng ghế. Trường hợp xấu nhất là xem hết.          |
+| Tìm một giá trị trong mảng đã sắp xếp   | $O(\log n)$                    | $O(\log n)$                        | Tìm kiếm nhị phân. Số phần tử gấp đôi thì chỉ thêm đúng một bước. |
+| Bộ nhớ sử dụng                          | đúng số ghế bạn xin            | các phần tử cộng thêm sức chứa dự phòng | Với việc nhân đôi, số ghế trống có thể lên đến xấp xỉ số phần tử. |
 
-Mảng rất phù hợp khi:
+## Nên dùng loại nào?
 
-- Bạn đọc phần tử theo vị trí, như các ngày trong tuần, các điểm ảnh của một bức hình, hay điểm số của một trò chơi.
-- Bạn đi qua tất cả phần tử theo thứ tự.
-- Bạn chủ yếu thêm và xóa ở cuối, như giỏ hàng.
-- Bạn cần tốc độ. Các phần tử nằm sát nhau trong bộ nhớ, và máy tính xử lý kiểu này rất hiệu quả.
+Dùng **mảng tĩnh** khi:
 
-Hãy xem xét cấu trúc khác khi:
+- Bạn biết trước số phần tử, và nó không bao giờ đổi. Các ngày trong tuần, các ô của bàn cờ, ba giá trị màu của một điểm ảnh.
+- Bạn muốn thứ đơn giản và nhỏ gọn nhất. Mảng tĩnh không có ghế dự phòng và không phải lớn lên.
+
+Dùng **mảng động** khi:
+
+- Bạn không biết trước mình sẽ có bao nhiêu phần tử. Các từ trong một đoạn văn, kết quả của một lần tìm kiếm, những thứ người dùng thêm vào.
+- Các phần tử liên tục được thêm vào cuối. Đây là trường hợp phổ biến nhất, và là lý do mảng động là danh sách mặc định trong hầu hết các ngôn ngữ.
+
+Trong code hằng ngày, mảng động thường là lựa chọn đúng (`vector`, `list`, `ArrayList`). Hãy dùng mảng tĩnh khi kích thước thật sự cố định.
+
+Cả hai loại có chung một điểm yếu, nên hãy xem xét cấu trúc khác khi:
 
 - Bạn thường xuyên chèn hoặc xóa ở đầu hoặc giữa. [Danh sách liên kết](./linked-list.mdx) (linked list) hoặc [deque](./queue.mdx) phù hợp hơn.
 - Bạn tra cứu phần tử theo tên hoặc khóa thay vì theo vị trí. [Bảng băm](./hash-table.mdx) (hash table) làm việc đó nhanh hơn nhiều.
 
 :::warning[Lỗi thường gặp]
+**Với mọi mảng**
+
 - **Lệch một đơn vị.** Mảng có 5 phần tử thì chỉ số từ 0 đến 4. `scores[5]` không tồn tại.
-- **C và C++ không có lưới an toàn.** Đi quá cuối mảng không báo lỗi. Chương trình đọc hoặc ghi vào bất cứ thứ gì đang nằm cạnh mảng. Nó có thể bị crash, hoặc âm thầm cho kết quả sai. (Trong C++, `vector::at(i)` có kiểm tra và báo lỗi.)
+- **C và C++ không có lưới an toàn.** Đi quá cuối mảng không báo lỗi. Chương trình đọc hoặc ghi vào bất cứ thứ gì đang nằm cạnh mảng. Nó có thể bị crash, hoặc âm thầm cho kết quả sai. (Trong C++, `vector::at(i)` và `array::at(i)` có kiểm tra và báo lỗi.)
+
+**Với mảng tĩnh**
+
+- **Mất độ dài trong C.** Khi bạn truyền một mảng vào một hàm, C chỉ trao địa chỉ của phần tử đầu, và độ dài bị mất. Hãy truyền độ dài như một tham số riêng.
+- **Nhầm size với capacity.** Mảng có 6 ghế, nhưng chỉ dùng 5. Hãy lặp đến size, không phải đến capacity.
+- **Ghi quá ghế cuối.** Mảng tĩnh không bao giờ lớn lên. Thêm phần tử thứ 7 vào mảng 6 ghế là ghi ra ngoài mảng.
+
+**Với mảng động**
+
+- **Giữ một địa chỉ qua lần push.** Một lần push có thể dời mọi phần tử sang một mảng mới. Con trỏ, tham chiếu hay iterator bạn giữ từ trước giờ có thể đang trỏ vào bộ nhớ đã giải phóng. Hãy dùng chỉ số.
+- **Lớn lên từng ghế một.** Nếu bạn tự dựng mảng động và mỗi lần chỉ làm nó lớn thêm một ghế, mỗi lần push sẽ chép mọi phần tử. Hãy lớn lên theo một hệ số, như nhân đôi.
 - **Vòng lặp chậm.** Chèn hoặc xóa ở đầu mảng bên trong một vòng lặp khiến mọi người phải dịch chỗ mỗi lần, và một chương trình nhanh thành chậm.
 :::
 
@@ -458,6 +765,10 @@ Các thông tin trên trang này được đối chiếu với:
 
 - [Array (data structure), Wikipedia](https://en.wikipedia.org/wiki/Array_%28data_structure%29)
 - [Dynamic array, Wikipedia](https://en.wikipedia.org/wiki/Dynamic_array)
+- [Arrays, cppreference (C)](https://en.cppreference.com/w/c/language/array)
+- [std::array, cppreference](https://en.cppreference.com/w/cpp/container/array)
+- [std::vector::capacity, cppreference](https://en.cppreference.com/w/cpp/container/vector/capacity)
+- [std::vector::reserve, cppreference](https://en.cppreference.com/w/cpp/container/vector/reserve)
+- [std::vector::insert, cppreference](https://en.cppreference.com/w/cpp/container/vector/insert)
 - [TimeComplexity, Python Wiki](https://wiki.python.org/moin/TimeComplexity)
 - [ArrayList, Java SE 21 API](https://docs.oracle.com/en/java/javase/21/docs/api/java.base/java/util/ArrayList.html)
-- [std::vector::insert, cppreference](https://en.cppreference.com/w/cpp/container/vector/insert)

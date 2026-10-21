@@ -1,6 +1,6 @@
 ---
 title: Array
-description: A row of boxes sitting side by side, each with a number, so you can jump straight to any item.
+description: A row of boxes sitting side by side, each with a number. A static array has a fixed number of boxes. A dynamic array grows when it runs out of room.
 sidebar_position: 1
 ---
 
@@ -12,7 +12,13 @@ import ArrayDiagram from '@site/src/components/ArrayDiagram';
 
 An **array** is the simplest way to keep a collection of things in order: a row of boxes, side by side, each with a number on it.
 
-## Idea
+Arrays come in two flavors, and this page keeps them apart:
+
+1. First, the **core idea** that every array shares.
+2. Then the **static array**: a row with a fixed number of boxes, which never changes.
+3. Then the **dynamic array**: a row that grows when it runs out of room.
+
+## Idea: a row of numbered seats
 
 Picture a row of numbered seats in a cinema. Every seat holds one person, the seats are right next to each other, and each seat has a number. If your ticket says seat 3, you walk straight to seat 3. You do not check seats 0, 1 and 2 first.
 
@@ -39,15 +45,63 @@ For example, if `base` is 1000 and `s` is 4, index 3 is at $1000 + 3 \times 4 = 
 
 </details>
 
-## How it works
+### Size and capacity
 
-### Reading and changing: instant
+Two numbers describe every array:
 
-Reading or changing `scores[3]` takes the same tiny effort whether the array has 5 items or 5 million. The computer jumps to the seat and does not look at the others.
+- The **capacity** is how many seats the row has.
+- The **size** (also called the **length**) is how many of those seats hold an item right now.
+
+If the row has 5 seats and 3 of them are taken, the capacity is 5 and the size is 3. The taken seats are always the first ones, on the left. The empty seats are spare room.
+
+<ArrayDiagram name="size 3, capacity 5" labelWidth="11rem" items={[10, 20, 30, null, null]} />
+
+In a plain array, both numbers are usually the same, because every seat is used. The two numbers become different when you keep some seats spare, and that is exactly what the two flavors do in different ways.
+
+### Two flavors
+
+| | **Static array** (fixed size) | **Dynamic array** (can grow) |
+| --- | --- | --- |
+| Number of seats | Decided when you create it. Never changes. | Grows by itself when it is full. |
+| Picture | A cinema row bolted to the floor. | A row that is swapped for a longer one when it fills up. |
+| C | `int a[5]` | Not built in. You build it with `malloc` (see the code below). |
+| C++ | `int a[5]` or `std::array<int, 5>` | `std::vector` |
+| Python | Not built in. A `list` that you never add to or remove from acts like one. | `list` |
+| Java | `int[]` | `ArrayList` |
+
+"Static" here only means "the size is fixed". It does not matter when the memory was obtained. A C array created with `malloc(5 * sizeof(int))` has its size chosen while the program runs, but once created it can never change size, so it is still a static array in this sense. "Dynamic" is reserved for arrays that can **change their size**.
+
+### What every array can do
+
+**Read or change an item: instant.** Reading or changing `scores[3]` takes the same tiny effort whether the array has 5 items or 5 million. The computer jumps to the seat and does not look at the others.
+
+**Search for a value: look one by one.** If you know the index, reading is instant. But if you only know the **value**, for example "where is 40?", the computer has no shortcut. It checks seat 0, then seat 1, then seat 2, and so on until it finds 40. For a big array that can take a while. (If the items are sorted, there is a much faster trick called binary search. It gets its own page later.)
+
+## Static array
+
+### Idea
+
+A **static array** is a row whose number of seats is decided when you create it, and never changes. It is like a cinema row bolted to the floor. You can change who sits in a seat, but you cannot add a seat or take one away.
+
+| You can | You cannot |
+| --- | --- |
+| Read any item instantly | Add a 6th item to a 5-seat array |
+| Change any item | Take a seat away |
+| Go through all the items | Make the row longer |
+
+Static arrays are a good fit when you know the number of items in advance: the 7 days of a week, the 12 months of a year, the squares of a chess board, the red, green and blue values of a color. They are as simple and as fast as an array can be, and they use exactly the memory they need.
+
+### A partly filled static array
+
+Often you do not know the exact count, but you know a **maximum**. Then you create a row with enough seats for the maximum and keep a separate number for how many seats are in use. That number is the **size**. The array itself never changes: only your count does.
+
+<ArrayDiagram name="size 3, capacity 6" labelWidth="11rem" items={[10, 20, 30, null, null, null]} />
+
+The three empty seats are spare room. The array still has 6 seats, and the code keeps track of how many are in use.
 
 ### Inserting: everyone shifts
 
-Say a new item, `25`, wants seat 2, but seat 2 is already taken. Seats cannot be squeezed apart, so everyone from seat 2 onward slides one seat to the right to make room. For that to work, the row needs one empty seat at the end.
+Say a new item, `25`, wants seat 2, but seat 2 is already taken. Seats cannot be squeezed apart, so everyone from seat 2 onward slides one seat to the right to make room. For that to work, the row needs one empty seat at the end. If the size already equals the capacity, there is no room and the insert is impossible.
 
 The order matters: move the **last** item first. If you started at the front, you would overwrite the next item before you had copied it.
 
@@ -64,7 +118,7 @@ With 5 items that is quick. With a million items, up to a million of them have t
 
 ### Deleting: close the gap
 
-An array cannot keep an empty seat in the middle. When an item leaves, everyone after it slides one seat to the left.
+An array cannot keep an empty seat in the middle. When an item leaves, everyone after it slides one seat to the left, and the size goes down by one.
 
 ```text
 position:             0     1     2     3     4
@@ -77,51 +131,113 @@ shrink by one:       10    30    40    50
 
 It is the same story as inserting: deleting near the front means many moves, deleting at the end means none.
 
-### Searching: look one by one
+### When the row is full
 
-If you know the index, reading is instant. But if you only know the **value**, for example "where is 40?", the computer has no shortcut. It checks seat 0, then seat 1, then seat 2, and so on until it finds 40. For a big array that can take a while. (If the items are sorted, there is a much faster trick called binary search. It gets its own page later.)
+A static array cannot grow. If you run out of seats, you have two choices:
 
-### When the row is full: growable arrays
+- **Choose a bigger capacity in advance.** If it is too small, you run out anyway. If it is too big, you waste memory.
+- **Build a bigger array by hand.** Create a new, longer array, copy every item into it, and drop the old one.
 
-A basic array has a fixed number of seats, decided when you create it. What if you need more?
+The second choice is a lot of work to do every time. A dynamic array does exactly that job for you, automatically.
 
-Most languages offer a **growable array** (also called a dynamic array): `list` in Python, `std::vector` in C++, `ArrayList` in Java. When the row is full, it builds a bigger row (often 1.5 to 2 times as long, depending on the language), moves everyone over, and throws the old row away. C has no ready-made one, so you do it yourself with `malloc` and `realloc`, as the code below shows. (Python's `list` and Java's `ArrayList` actually store references to their items, but everything on this page works the same way for them.)
+## Dynamic array
 
-Moving everyone is slow, but it happens rarely. After the row grows, there is plenty of free room, so you can add many items before the next move. So **on average**, adding to the end is still fast.
+### Idea
+
+A **dynamic array** is a static array in disguise. Inside, it keeps three things: a static array that holds the items, the **size** (how many seats are in use) and the **capacity** (how many seats the static array has).
+
+From the outside it behaves like a row that can grow. Python's `list`, C++'s `std::vector` and Java's `ArrayList` are all dynamic arrays. C has no ready-made one, so you build it yourself, as in the code below.
+
+### Adding at the end: when there is room
+
+If the size is smaller than the capacity, there is a free seat right after the last item. The dynamic array puts the new item in that seat and raises the size by one. That is instant.
+
+<ArrayDiagram name="size 3, capacity 5" labelWidth="11rem" items={[10, 20, 30, null, null]} />
+
+<ArrayDiagram name="add 40: size 4" labelWidth="11rem" items={[10, 20, 30, 40, null]} hideIndex highlight={[3]} />
+
+### Adding at the end: when the row is full
+
+If the size equals the capacity, there is no free seat. The dynamic array grows in three steps:
+
+1. Create a **new, bigger** static array.
+2. **Copy** every item from the old array into it.
+3. **Throw away** the old array.
+
+Then the new item goes into the first free seat of the new array. Here a row with 4 seats is full, and `50` arrives:
+
+<ArrayDiagram name="1. full: 4 of 4 seats" labelWidth="13rem" items={[10, 20, 30, 40]} />
+
+<ArrayDiagram name="2. a new array with 8 seats" labelWidth="13rem" items={[null, null, null, null, null, null, null, null]} hideIndex />
+
+<ArrayDiagram name="3. copy the 4 items over" labelWidth="13rem" items={[10, 20, 30, 40, null, null, null, null]} hideIndex highlight={[0, 1, 2, 3]} />
+
+<ArrayDiagram name="4. add 50, drop the old array" labelWidth="13rem" items={[10, 20, 30, 40, 50, null, null, null]} hideIndex highlight={[4]} />
+
+The new array is bigger than needed on purpose: it has room for 3 more items before the next growth. How much bigger is a choice made by whoever wrote the dynamic array. Many implementations grow by a constant factor, commonly somewhere between 1.5 and 2 times, depending on the language.
+
+### Why growing by a lot at once
+
+Copying takes time, so growing should not happen often. That is why the new array is much bigger, not just one seat bigger. Here is what happens when you add 9 items, one by one, to an empty dynamic array that starts with 1 seat and doubles when it is full:
+
+| Push number                      | 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9  |
+| -------------------------------- | - | - | - | - | - | - | - | - | -- |
+| Capacity after the push          | 1 | 2 | 4 | 4 | 8 | 8 | 8 | 8 | 16 |
+| Items copied during this push    | 0 | 1 | 2 | 0 | 4 | 0 | 0 | 0 | 8  |
+
+Most pushes copy nothing. A few copy a lot, but each growth leaves lots of free room, so the next growth comes much later. In total, 9 pushes copied $1 + 2 + 4 + 8 = 15$ items, less than 2 copies per push. So **on average**, adding to the end is still fast.
 
 <details>
 <summary>Optional: why "on average" is fast</summary>
 
-Add $n$ items one by one to an empty growable array. To keep the math simple, assume it doubles when full. (Real implementations use factors between about 1.1 and 2, and the conclusion is the same.) Moves happen when the size reaches 1, 2, 4, 8, ... and the total number of items moved is:
+Add $n$ items one by one to an empty dynamic array. To keep the math simple, assume it doubles when full. (Real implementations use factors between about 1.1 and 2, and the conclusion is the same.) Copies happen when the size reaches 1, 2, 4, 8, ... and the total number of items copied is:
 
 $$
 1 + 2 + 4 + \dots + 2^k = 2^{k+1} - 1 < 2n \qquad (2^k < n)
 $$
 
-That is fewer than 2 moves per added item, so the extra cost per item is a small constant. This is called **amortized** $O(1)$.
+That is fewer than 2 copies per added item, so the extra cost per item is a small constant. This is called **amortized** $O(1)$.
 
 </details>
 
+### Inserting and deleting in the middle
+
+Nothing is special here. A dynamic array is still a row of seats, so inserting at the front or in the middle makes the items after it **shift**, exactly as in the static array above. It costs $O(n)$. Only adding and removing at the **end** is fast.
+
+### Spare room costs memory
+
+After a growth, many seats are empty on purpose. With doubling, up to about as many seats can be empty as are in use. You trade some memory for speed.
+
+If you know in advance how many items are coming, you can ask for that capacity up front and avoid growing again and again. C++ `vector` has `reserve`, and Java `ArrayList` has `ensureCapacity`. Python's `list` manages its capacity on its own.
+
+### Careful: growing moves everything
+
+Growing copies the items into a **new** array, so the items now live at **new addresses**. Anything that remembered where an item used to be (a pointer, a reference, an iterator) now points into the old array, which has been thrown away. In C++, an insert or a push that makes a `vector` grow invalidates all iterators and references to its items. Refer to items by **index** instead of by address. An index stays correct after growth.
+
 ## Code
 
-Pick your language in the tabs. Your choice is remembered on every page.
+Each flavor has two examples. For static arrays: the basics, and insert and delete by shifting. For dynamic arrays: build one yourself and watch it grow, and use the ready-made one.
 
-### The basics: create, read, change, loop
+In C, C++ and Java the static array is the real thing. Python has no fixed-size array, so the Python examples use a `list` that is never added to or removed from.
+
+### Static array: the basics
 
 <Tabs groupId="language">
   <TabItem value="c" label="C" default>
 
-```c title="basics.c"
+```c title="static_basics.c"
 #include <stdio.h>
 
 int main(void) {
-    int scores[5] = {10, 20, 30, 40, 50};  // an array of 5 integers
+    int scores[5] = {10, 20, 30, 40, 50};  // 5 seats, fixed for good
+    int length = sizeof(scores) / sizeof(scores[0]);  // 5 seats
 
-    printf("%d\n", scores[2]);  // read index 2 -> prints 30
-    scores[2] = 99;             // change index 2
+    printf("length %d\n", length);  // length 5
+    printf("%d\n", scores[2]);      // read index 2 -> prints 30
+    scores[2] = 99;                 // change index 2
 
-    for (int i = 0; i < 5; i++) {  // visit every item (0 to 4)
-        printf("%d ", scores[i]);  // prints: 10 20 99 40 50
+    for (int i = 0; i < length; i++) {  // visit every item
+        printf("%d ", scores[i]);       // prints: 10 20 99 40 50
     }
     printf("\n");
     return 0;
@@ -131,17 +247,19 @@ int main(void) {
   </TabItem>
   <TabItem value="cpp" label="C++">
 
-```cpp title="basics.cpp"
+```cpp title="static_basics.cpp"
+#include <array>
 #include <iostream>
 
 int main() {
-    int scores[5] = {10, 20, 30, 40, 50};  // an array of 5 integers
+    std::array<int, 5> scores = {10, 20, 30, 40, 50};  // 5 seats, fixed
 
+    std::cout << "length " << scores.size() << "\n";  // length 5
     std::cout << scores[2] << "\n";  // read index 2 -> prints 30
     scores[2] = 99;                  // change index 2
 
-    for (int score : scores) {       // visit every item, in order
-        std::cout << score << " ";   // prints: 10 20 99 40 50
+    for (int score : scores) {      // visit every item
+        std::cout << score << " ";  // prints: 10 20 99 40 50
     }
     std::cout << "\n";
 }
@@ -150,13 +268,16 @@ int main() {
   </TabItem>
   <TabItem value="python" label="Python">
 
-```python title="basics.py"
-scores = [10, 20, 30, 40, 50]  # a list of 5 integers
+```python title="static_basics.py"
+# Python has no fixed-size array. A list that we never add to or remove
+# from behaves like one.
+scores = [10, 20, 30, 40, 50]  # 5 seats, which we never add to
 
+print("length", len(scores))  # length 5
 print(scores[2])  # read index 2 -> prints 30
 scores[2] = 99    # change index 2
 
-for score in scores:       # visit every item, in order
+for score in scores:       # visit every item
     print(score, end=" ")  # prints: 10 20 99 40 50
 print()
 ```
@@ -164,16 +285,17 @@ print()
   </TabItem>
   <TabItem value="java" label="Java">
 
-```java title="Basics.java"
-public class Basics {
+```java title="StaticBasics.java"
+public class StaticBasics {
     public static void main(String[] args) {
-        int[] scores = {10, 20, 30, 40, 50};  // an array of 5 integers
+        int[] scores = {10, 20, 30, 40, 50};  // 5 seats, fixed for good
 
+        System.out.println("length " + scores.length);  // length 5
         System.out.println(scores[2]);  // read index 2 -> prints 30
         scores[2] = 99;                 // change index 2
 
-        for (int score : scores) {  // visit every item
-            System.out.print(score + " ");  // 10 20 99 40 50
+        for (int score : scores) {          // visit every item
+            System.out.print(score + " ");  // prints: 10 20 99 40 50
         }
         System.out.println();
     }
@@ -183,14 +305,14 @@ public class Basics {
   </TabItem>
 </Tabs>
 
-### Insert and delete by shifting
+### Static array: insert and delete by shifting
 
-Here the array has room for 6 items but only 5 are in use, and `size` keeps track of that. To keep the code short, these functions assume the index is valid and there is room for one more item. Real code should check both.
+Here the array has room for 6 items but only 5 are in use, and `size` keeps track of that. The array itself never changes length. To keep the code short, these functions assume the index is valid and there is room for one more item. Real code should check both.
 
 <Tabs groupId="language">
   <TabItem value="c" label="C" default>
 
-```c title="insert_remove.c"
+```c title="static_shift.c"
 #include <stdio.h>
 
 // Put value at index pos. Returns the new size.
@@ -226,7 +348,7 @@ int main(void) {
   </TabItem>
   <TabItem value="cpp" label="C++">
 
-```cpp title="insert_remove.cpp"
+```cpp title="static_shift.cpp"
 #include <iostream>
 
 // Put value at index pos. Returns the new size.
@@ -261,7 +383,7 @@ int main() {
   </TabItem>
   <TabItem value="python" label="Python">
 
-```python title="insert_remove.py"
+```python title="static_shift.py"
 def insert_at(arr, size, pos, value):
     """Put value at index pos. Returns the new size."""
     for i in range(size, pos, -1):
@@ -289,8 +411,8 @@ print(*arr[:size])
   </TabItem>
   <TabItem value="java" label="Java">
 
-```java title="InsertRemove.java"
-public class InsertRemove {
+```java title="StaticShift.java"
+public class StaticShift {
     // Put value at index pos. Returns the new size.
     static int insertAt(int[] arr, int size, int pos, int value) {
         for (int i = size; i > pos; i--) {
@@ -324,37 +446,56 @@ public class InsertRemove {
   </TabItem>
 </Tabs>
 
-### A growable array
+### Dynamic array: build one yourself
 
-In C you manage the growing yourself: ask for memory with `malloc`, get a bigger block with `realloc` when the row is full, and give the memory back with `free`. (To keep it short, the code does not check whether `malloc` and `realloc` succeeded. Real code should.) The other languages do all of this for you. In the code below, the operations marked "slow" are the ones that make the other items shift, as you saw above.
+This is the dynamic array from the pictures above, built on top of a static array. It starts with 1 seat and doubles when it is full, following the three steps: a new bigger array, copy, drop the old one. The program adds 9 items and prints the capacity after each push, so you can watch it grow. It also counts how many items were copied in total. The numbers are the ones in the table above.
 
 <Tabs groupId="language">
   <TabItem value="c" label="C" default>
 
-```c title="growing.c"
+```c title="dynamic_build.c"
 #include <stdio.h>
 #include <stdlib.h>
 
-int main(void) {
-    int capacity = 2;  // seats in the row
-    int size = 0;      // seats taken
-    int *nums = malloc(capacity * sizeof(int));  // ask for 2 seats
+typedef struct {
+    int *items;    // the static array that holds the items
+    int size;      // how many seats are in use
+    int capacity;  // how many seats the static array has
+    int copies;    // items copied while growing, just to count them
+} DynArray;
 
-    for (int i = 1; i <= 5; i++) {
-        if (size == capacity) {  // the row is full
-            // get a row twice as long and move everyone over
-            capacity *= 2;
-            nums = realloc(nums, capacity * sizeof(int));
+void push(DynArray *a, int value) {
+    if (a->size == a->capacity) {  // full: grow
+        int bigger = a->capacity * 2;
+        int *items = malloc(bigger * sizeof(int));  // 1. a bigger array
+        for (int i = 0; i < a->size; i++) {
+            items[i] = a->items[i];  // 2. copy every item over
+            a->copies++;
         }
-        nums[size] = i * 10;  // add the new item at the end
-        size++;
+        free(a->items);  // 3. throw the old array away
+        a->items = items;
+        a->capacity = bigger;
     }
+    a->items[a->size] = value;  // the next free seat
+    a->size++;
+}
 
-    // print every item: 10 20 30 40 50
-    for (int i = 0; i < size; i++) printf("%d ", nums[i]);
-    printf("\n");
+int main(void) {
+    DynArray a = {malloc(sizeof(int)), 0, 1, 0};  // starts with 1 seat
 
-    free(nums);  // give the memory back when you are done
+    printf("capacity:");
+    for (int i = 1; i <= 9; i++) {
+        push(&a, i * 10);
+        printf(" %d", a.capacity);  // the capacity after each push
+    }
+    printf("\n");  // capacity: 1 2 4 4 8 8 8 8 16
+    printf("copied: %d\n", a.copies);  // copied: 15
+
+    printf("items:");
+    for (int i = 0; i < a.size; i++) printf(" %d", a.items[i]);
+    printf("\n");  // items: 10 20 30 40 50 60 70 80 90
+
+    free(a.items);
     return 0;
 }
 ```
@@ -362,18 +503,160 @@ int main(void) {
   </TabItem>
   <TabItem value="cpp" label="C++">
 
-```cpp title="growing.cpp"
+```cpp title="dynamic_build.cpp"
+#include <iostream>
+#include <memory>
+
+struct DynArray {
+    std::unique_ptr<int[]> items = std::make_unique<int[]>(1);  // seats
+    int size = 0;      // how many seats are in use
+    int capacity = 1;  // how many seats the static array has
+    int copies = 0;    // items copied while growing, just to count them
+
+    void push(int value) {
+        if (size == capacity) {  // full: grow
+            int bigger = capacity * 2;
+            auto grown = std::make_unique<int[]>(bigger);  // 1. bigger
+            for (int i = 0; i < size; i++) {
+                grown[i] = items[i];  // 2. copy every item over
+                copies++;
+            }
+            items = std::move(grown);  // 3. the old array is freed
+            capacity = bigger;
+        }
+        items[size] = value;  // the next free seat
+        size++;
+    }
+};
+
+int main() {
+    DynArray a;  // starts with 1 seat
+
+    std::cout << "capacity:";
+    for (int i = 1; i <= 9; i++) {
+        a.push(i * 10);
+        std::cout << " " << a.capacity;  // the capacity after each push
+    }
+    std::cout << "\n";  // capacity: 1 2 4 4 8 8 8 8 16
+    std::cout << "copied: " << a.copies << "\n";  // copied: 15
+
+    std::cout << "items:";
+    for (int i = 0; i < a.size; i++) std::cout << " " << a.items[i];
+    std::cout << "\n";  // items: 10 20 30 40 50 60 70 80 90
+}
+```
+
+  </TabItem>
+  <TabItem value="python" label="Python">
+
+```python title="dynamic_build.py"
+class DynArray:
+    def __init__(self):
+        self.items = [None]  # a fixed-size list that holds the items
+        self.size = 0        # how many seats are in use
+        self.capacity = 1    # how many seats the list has
+        self.copies = 0      # items copied while growing, to count them
+
+    def push(self, value):
+        if self.size == self.capacity:  # full: grow
+            bigger = [None] * (self.capacity * 2)  # 1. a bigger list
+            for i in range(self.size):
+                bigger[i] = self.items[i]  # 2. copy every item over
+                self.copies += 1
+            self.items = bigger  # 3. the old list is thrown away
+            self.capacity *= 2
+        self.items[self.size] = value  # the next free seat
+        self.size += 1
+
+
+a = DynArray()  # starts with 1 seat
+
+capacities = []
+for i in range(1, 10):
+    a.push(i * 10)
+    capacities.append(a.capacity)  # the capacity after each push
+print("capacity:", *capacities)  # capacity: 1 2 4 4 8 8 8 8 16
+print("copied:", a.copies)  # copied: 15
+print("items:", *a.items[:a.size])  # items: 10 20 30 40 50 60 70 80 90
+```
+
+  </TabItem>
+  <TabItem value="java" label="Java">
+
+```java title="DynamicBuild.java"
+public class DynamicBuild {
+    static class DynArray {
+        int[] items = new int[1];  // the static array of items
+        int size = 0;              // how many seats are in use
+        int capacity = 1;          // how many seats the array has
+        int copies = 0;            // items copied so far, to count
+
+        void push(int value) {
+            if (size == capacity) {  // full: grow
+                // 1. a bigger array
+                int[] bigger = new int[capacity * 2];
+                for (int i = 0; i < size; i++) {
+                    bigger[i] = items[i];  // 2. copy every item over
+                    copies++;
+                }
+                items = bigger;  // 3. the old array is thrown away
+                capacity *= 2;
+            }
+            items[size] = value;  // the next free seat
+            size++;
+        }
+    }
+
+    public static void main(String[] args) {
+        DynArray a = new DynArray();  // starts with 1 seat
+
+        StringBuilder line = new StringBuilder("capacity:");
+        for (int i = 1; i <= 9; i++) {
+            a.push(i * 10);
+            // the capacity after each push
+            line.append(" ").append(a.capacity);
+        }
+        System.out.println(line);  // capacity: 1 2 4 4 8 8 8 8 16
+        System.out.println("copied: " + a.copies);  // copied: 15
+
+        line = new StringBuilder("items:");
+        for (int i = 0; i < a.size; i++) {
+            line.append(" ").append(a.items[i]);
+        }
+        System.out.println(line);  // items: 10 20 30 40 50 60 70 80 90
+    }
+}
+```
+
+  </TabItem>
+</Tabs>
+
+### Dynamic array: use the ready-made one
+
+In practice you use the built-in dynamic array and let it manage the capacity. The calls marked "slow" are the ones that make the other items shift, as you saw above.
+
+<Tabs groupId="language">
+  <TabItem value="c" label="C" default>
+
+The C standard library has no dynamic array. Build one, as above. In real C code you would usually call `realloc`, which grows a block of memory and copies the items for you.
+
+  </TabItem>
+  <TabItem value="cpp" label="C++">
+
+```cpp title="dynamic_ready.cpp"
 #include <iostream>
 #include <vector>
 
 int main() {
     std::vector<int> nums = {10, 20, 30};
+    nums.reserve(100);  // optional: room for 100 items up front
 
     nums.push_back(40);                 // add at the end: fast
     nums.insert(nums.begin() + 1, 15);  // insert at index 1: slow
     nums.pop_back();                    // remove the last: fast
     nums.erase(nums.begin());           // remove the first: slow
 
+    std::cout << "size " << nums.size() << "\n";  // size 3
     std::cout << nums[2] << "\n";       // read by index: fast
 }
 ```
@@ -381,33 +664,36 @@ int main() {
   </TabItem>
   <TabItem value="python" label="Python">
 
-```python title="growing.py"
-nums = [10, 20, 30]
+```python title="dynamic_ready.py"
+nums = [10, 20, 30]  # Python manages the capacity by itself
 
 nums.append(40)     # add at the end: fast
 nums.insert(1, 15)  # insert at index 1: slow
 nums.pop()          # remove the last: fast
 nums.pop(0)         # remove the first: slow
 
+print("size", len(nums))  # size 3
 print(nums[2])      # read by index: fast
 ```
 
   </TabItem>
   <TabItem value="java" label="Java">
 
-```java title="Growing.java"
+```java title="DynamicReady.java"
 import java.util.ArrayList;
 import java.util.List;
 
-public class Growing {
+public class DynamicReady {
     public static void main(String[] args) {
-        List<Integer> nums = new ArrayList<>(List.of(10, 20, 30));
+        ArrayList<Integer> nums = new ArrayList<>(List.of(10, 20, 30));
+        nums.ensureCapacity(100);  // optional: room for 100 items
 
         nums.add(40);                  // add at the end: fast
         nums.add(1, 15);               // insert at index 1: slow
         nums.remove(nums.size() - 1);  // remove the last: fast
         nums.remove(0);                // remove the first: slow
 
+        System.out.println("size " + nums.size());  // size 3
         System.out.println(nums.get(2));  // read by index: fast
     }
 }
@@ -423,32 +709,53 @@ Complexity answers one question: **if the array gets bigger, how much slower doe
 - **O(1)**: instant. The same effort whether the array has 10 items or 10 million.
 - **O(n)**: the effort grows in step with the number of items, called **n**. Twice as many items means roughly twice the work.
 
-| Operation                              | Cost        | In plain words                                                       |
-| -------------------------------------- | ----------- | -------------------------------------------------------------------- |
-| Read or change the item at an index    | $O(1)$      | Jump straight to the seat.                                           |
-| Add or remove at the end               | $O(1)$      | Nobody has to move. A growable array is slow only when it must grow. |
-| Insert or remove at the front or middle | $O(n)$     | Everyone after that seat has to slide over.                          |
-| Find a value in an unsorted array      | $O(n)$      | Check the seats one by one. In the worst case, all of them.          |
-| Find a value in a sorted array         | $O(\log n)$ | Binary search. Doubling the items adds only one more step.           |
-| Memory used                            | $O(n)$      | One seat per item.                                                   |
+Here are both flavors side by side:
 
-## When to use it
+| Operation                               | Static array                   | Dynamic array                      | In plain words                                                  |
+| --------------------------------------- | ------------------------------ | ---------------------------------- | --------------------------------------------------------------- |
+| Read or change the item at an index     | $O(1)$                         | $O(1)$                             | Jump straight to the seat.                                      |
+| Add at the end                          | $O(1)$ if a seat is free, else impossible | $O(1)$ on average       | The dynamic array is slow only on the rare push that makes it grow. |
+| Remove the last item                    | $O(1)$                         | $O(1)$                             | Just lower the size. Nobody moves.                              |
+| Insert or remove at the front or middle | $O(n)$                         | $O(n)$                             | Everyone after that seat has to slide over.                     |
+| Find a value in an unsorted array       | $O(n)$                         | $O(n)$                             | Check the seats one by one. In the worst case, all of them.     |
+| Find a value in a sorted array          | $O(\log n)$                    | $O(\log n)$                        | Binary search. Doubling the items adds only one more step.      |
+| Memory used                             | exactly the seats you asked for | the items plus spare capacity     | With doubling, up to about as many empty seats as items.        |
 
-An array is a great fit when:
+## Which one should you use?
 
-- You read items by their position, like the days of the week, the pixels of an image, or the scores of a game.
-- You go through all the items in order.
-- You mostly add and remove at the end, like a shopping cart.
-- You want speed. Items sit side by side in memory, which computers handle very efficiently.
+Use a **static array** when:
 
-Look at another structure when:
+- You know the number of items in advance, and it never changes. Days of the week, the squares of a board, the three color values of a pixel.
+- You want the simplest and smallest thing. A static array has no spare seats and no growing.
+
+Use a **dynamic array** when:
+
+- You do not know in advance how many items you will have. The words in a text, the results of a search, the items a user adds.
+- Items keep being added at the end. This is the most common case, and the reason dynamic arrays are the default list in most languages.
+
+In everyday code, the dynamic array is usually the right choice (`vector`, `list`, `ArrayList`). Reach for a static array when the size really is fixed.
+
+Both flavors share the same weak spot, so look at another structure when:
 
 - You often insert or remove at the front or middle. A [linked list](./linked-list.mdx) or a [deque](./queue.mdx) fits better.
 - You look items up by a name or key instead of a position. A [hash table](./hash-table.mdx) is much faster at that.
 
 :::warning[Common mistakes]
+**With every array**
+
 - **Off by one.** An array with 5 items has indexes 0 to 4. `scores[5]` does not exist.
-- **No safety net in C and C++.** Going past the end does not raise an error. The program reads or writes whatever happens to be next to the array. It may crash, or quietly give wrong answers. (In C++, `vector::at(i)` does check and reports an error.)
+- **No safety net in C and C++.** Going past the end does not raise an error. The program reads or writes whatever happens to be next to the array. It may crash, or quietly give wrong answers. (In C++, `vector::at(i)` and `array::at(i)` do check and report an error.)
+
+**With static arrays**
+
+- **Losing the length in C.** When you pass an array to a function, C hands over only the address of the first item, and the length is lost. Pass the length as a separate argument.
+- **Mixing up size and capacity.** The array has 6 seats, but only 5 are in use. Loop up to the size, not up to the capacity.
+- **Writing past the last seat.** A static array never grows. Adding a 7th item to a 6-seat array writes outside it.
+
+**With dynamic arrays**
+
+- **Keeping an address across a push.** A push can move all the items to a new array. A pointer, reference or iterator you kept from before may now point at freed memory. Use the index.
+- **Growing one seat at a time.** If you build your own dynamic array and make it only one seat bigger each time, every push copies every item. Grow by a factor, like doubling.
 - **Slow loops.** Inserting or removing at the front inside a loop makes everyone shift every time, so a fast program becomes a slow one.
 :::
 
@@ -458,6 +765,10 @@ The facts on this page were checked against:
 
 - [Array (data structure), Wikipedia](https://en.wikipedia.org/wiki/Array_%28data_structure%29)
 - [Dynamic array, Wikipedia](https://en.wikipedia.org/wiki/Dynamic_array)
+- [Arrays, cppreference (C)](https://en.cppreference.com/w/c/language/array)
+- [std::array, cppreference](https://en.cppreference.com/w/cpp/container/array)
+- [std::vector::capacity, cppreference](https://en.cppreference.com/w/cpp/container/vector/capacity)
+- [std::vector::reserve, cppreference](https://en.cppreference.com/w/cpp/container/vector/reserve)
+- [std::vector::insert, cppreference](https://en.cppreference.com/w/cpp/container/vector/insert)
 - [TimeComplexity, Python Wiki](https://wiki.python.org/moin/TimeComplexity)
 - [ArrayList, Java SE 21 API](https://docs.oracle.com/en/java/javase/21/docs/api/java.base/java/util/ArrayList.html)
-- [std::vector::insert, cppreference](https://en.cppreference.com/w/cpp/container/vector/insert)
